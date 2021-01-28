@@ -119,7 +119,7 @@ Process = R6::R6Class(
     EncapsulateScreens = function(){
       if(verbose) cat(paste0(class(self)[1], '::EncapsulateScreens() from - ', self$id, '\n\n'))
       lapply(1:self$length, function(i) {
-        shinyjs::disabled(
+        #shinyjs::disabled(
           if (i==1)
             div(id = self$ns(self$config$steps[i]),
                 class = paste0("page_", self$id),
@@ -132,7 +132,7 @@ Process = R6::R6Class(
                   self$screens[[i]]
               )
             )
-        )
+       # )
       }
       )
     },
