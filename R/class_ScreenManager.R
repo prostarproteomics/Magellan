@@ -308,7 +308,7 @@ ScreenManager <- R6::R6Class(
     #' 
     #' @param verbose xxx
     #' 
-    initialize = function(id, verbose=FALSE, orientation='h') {
+    initialize = function(id, verbose=FALSE, orientation='h', .config) {
       self$verbose <- verbose
       if(self$verbose) cat(paste0(class(self)[1], '::initialize() from - ', self$id, '\n\n'))
       self$id <- id
@@ -325,11 +325,11 @@ ScreenManager <- R6::R6Class(
       
       
       
-      check <- private$CheckConfig(private$.config)
+      check <- private$CheckConfig(.config)
       if (!check$passed)
         stop(paste0("Errors in 'config'", paste0(check$msg, collapse=' ')))
       else
-        self$config <- private$.config
+        self$config <- .config
       
       
       self$length <- length(self$config$mandatory)

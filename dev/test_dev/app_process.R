@@ -16,11 +16,17 @@ source(file.path("../../R", "mod_bsmodal.R"), local=TRUE)$value
 source(file.path('.', 'Example_ProcessA.R'), local=TRUE)$value
 source(file.path('.', 'Example_ProcessB.R'), local=TRUE)$value
 source(file.path('.', 'Example_Description.R'), local=TRUE)$value
+source(file.path('.', 'mod_processA.R'), local=TRUE)$value
 
 
 
 #Pipeline <- Pipeline$new('App')
-Pipeline <- Example_ProcessA$new('App')
+Pipeline <- Process$new('App',
+                        .config = list(name = 'ProcessA',
+                                       steps = c('Description'),
+                                       mandatory = c(T)
+                                       )
+)
 ui = fluidPage(
   tagList(
     shinyjs::useShinyjs(),
