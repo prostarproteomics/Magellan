@@ -317,7 +317,7 @@ ScreenManager <- R6::R6Class(
         trigger = 0,
         value = NULL
       )
-      
+
       self$orientation = orientation
       self$default_pos$VALIDATED <- self$length
       self$default_pos$SKIPPED <- 1
