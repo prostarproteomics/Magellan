@@ -8,7 +8,6 @@ options(shiny.fullstacktrace = T)
 
 #------------------------ Class TimelineDraw --------------------------------------
 source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
-source(file.path('../../R', 'global.R'), local=TRUE)$value
 
 ui <- fluidPage(
   actionButton('pos', 'Change pos'),
@@ -29,19 +28,19 @@ server <- function(input, output){
     steps = c('step 1', 'step 2', 'step 3', 'step 4'),
     mandatory = c(step1=T, step2=T, step3=F, step4=T)
   )
-
+  
   observeEvent(input$pos, {
     rv$current.pos <- input$pos %% length(rv$status) +1
   })
   
-
+  
   mod_timeline_server('test',
                       mandatory = reactive({config$mandatory}),
                       status = reactive({rv$status}),
                       position = reactive({rv$current.pos}),
                       enabled = reactive({rv$tl.tags.enabled})
   )
-
+  
 }
 
 

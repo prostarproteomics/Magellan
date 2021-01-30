@@ -1,5 +1,5 @@
 source(file.path('../../../../R', 'global.R'), local=TRUE)$value
-source(file.path('./Timelines', 'mod_timeline.R'), local=TRUE)$value
+source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
 
 options(shiny.fullstacktrace = T)
 ui <- fluidPage(

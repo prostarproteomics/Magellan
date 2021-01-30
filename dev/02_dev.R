@@ -19,7 +19,7 @@ usethis::use_package( "R6" )
 usethis::use_package( "msdata" )
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module( name = "data_explorer" ) # Name of the module
+golem::add_module( name = "process" ) # Name of the module
 golem::add_module( name = "name_of_module2" ) # Name of the module
 
 ## Add helper functions ----
