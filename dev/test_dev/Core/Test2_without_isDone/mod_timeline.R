@@ -204,20 +204,8 @@ mod_timeline_server <- function(id, style=2, config, onlyReset=NULL, showSaveBtn
                                    shinyjs::hidden(div(id = ns(paste0("div_screen", x)),  config$screens[[x]]))
                                })
     })
-    
-    
-    
-    navPage <- function(direction) {
-      newval <- current$val + direction 
-      newval <- max(1, newval)
-      newval <- min(newval, current$nbSteps)
-      if(newval == 0)
-        browser()
-        
-      current$val <- newval
-    }
-    observeEvent(input$prevBtn, ignoreInit = TRUE, {navPage(-1)})
-    observeEvent(input$nextBtn, ignoreInit = TRUE, {navPage(1)})
+
+
     
     
     output$show_screens <- renderUI({tagList(config$screens)})

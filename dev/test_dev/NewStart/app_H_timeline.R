@@ -11,7 +11,7 @@ source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
 
 ui <- fluidPage(
   actionButton('pos', 'Change pos'),
-  mod_timeline_ui('test')
+  mod_timeline_ui('TL')
 )
 
 
@@ -35,7 +35,7 @@ server <- function(input, output){
   
   
   mod_timeline_server('test',
-                      mandatory = reactive({config$mandatory}),
+                      mandatory = config$mandatory,
                       status = reactive({rv$status}),
                       position = reactive({rv$current.pos}),
                       enabled = reactive({rv$tl.tags.enabled})

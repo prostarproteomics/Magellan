@@ -28,7 +28,7 @@ mod_timeline_ui <- function(id){
 #'
 #' @noRd 
 mod_timeline_server = function(id, 
-                               mandatory, 
+                               config, 
                                status, 
                                position, 
                                enabled, 
@@ -47,13 +47,13 @@ mod_timeline_server = function(id,
       ns <- session$ns
       
       observe({
-        req(mandatory())
-        rv.tl$length <- length(mandatory())
+        req(config)
+        rv.tl$length <- length(config$steps)
       })
       
       UpdateTags <- reactive({
         tl_status <- rep('undone', rv.tl$length)
-        tl_status[which(mandatory())] <- 'mandatory'
+        tl_status[which(config$mandatory)] <- 'mandatory'
         tl_status[which(unlist(status()) == global$VALIDATED)] <- 'completed'
         tl_status[which(unlist(status()) == global$SKIPPED)] <- 'skipped'
     
@@ -72,7 +72,7 @@ mod_timeline_server = function(id,
                  tags$li(class = paste0('li ', UpdateTags()[x]),
                          tags$div(class='timestamp'),
                          tags$div(class='status',
-                                  tags$h4(names(mandatory())[x])
+                                  tags$h4(config$steps[x])
                                   )
                          )
                    }
@@ -83,7 +83,7 @@ mod_timeline_server = function(id,
       
       output$show_v_TL <- renderUI  ({
         tl_status <- rep('undone', rv.tl$length)
-        tl_status[which(mandatory())] <- 'mandatory'
+        tl_status[which(config$mandatory)] <- 'mandatory'
         tl_status[which(unlist(status()) == global$VALIDATED)] <- 'completed'
         tl_status[which(unlist(status()) == global$SKIPPED)] <- 'skipped'
     
@@ -96,7 +96,7 @@ mod_timeline_server = function(id,
     
         tags$ul(
           lapply(1:rv.tl$length, function(x){
-          tags$li(tags$a( class=UpdateTags()[x], names(mandatory())[x]))
+          tags$li(tags$a( class=UpdateTags()[x], config$steps[x]))
             }
           )
           )

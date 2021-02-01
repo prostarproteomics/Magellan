@@ -36,9 +36,6 @@ Process = R6::R6Class(
     ),
 
   public = list(
-    #' @field modal_txt xxx
-    modal_txt = "This action will reset this process. The input dataset will be the output of the last previous
-                      validated process and all further datasets will be removed",
     
     
     #' @description
@@ -56,61 +53,6 @@ Process = R6::R6Class(
       
       setNames(mod_processA_ui(self$ns('tutu')),self$config$steps)
     },
-    #' @description
-    #' xxx
-    #'
-    #' @param cond A number
-    #' @param range A number
-    #' 
-    #' @return Nothing.
-    #' 
-    ToggleState_Screens = function(cond, range){
-      if(verbose) cat(paste0(class(self)[1], '::ToggleState_Steps() from - ', self$id, '\n\n'))
-      #browser()
-      lapply(range, function(x){
-        cond <- cond && !(self$rv$status[x] == global$SKIPPED)
-        shinyjs::toggleState(self$ns(self$config$steps[x]), condition = cond  )
-        #Send to TL the enabled/disabled tags
-        self$rv$tl.tags.enabled[x] <- cond
-      })
-    },
-    
-
-    #' @description
-    #' et to skipped all steps of the current object
-    #' 
-    #' @return Nothing.
-    #' 
-    Set_All_Skipped = function(){
-      if(verbose) cat(paste0(class(self)[1], '::', 'Set_All_Skipped() from - ', self$id, '\n\n'))
-      self$rv$status <- setNames(rep(global$SKIPPED, self$length), self$config$steps)
-    },
-    
-    #' @description
-    #' et to skipped all steps of the current object
-    #' 
-    #' @return Nothing.
-    #' 
-    Discover_Skipped_Steps = function(){
-      if(verbose) cat(paste0(class(self)[1], '::Discover_Skipped_Status() from - ', self$id, '\n\n'))
-      for (i in 1:self$length){
-        max.val <- private$GetMaxValidated_AllSteps()
-        if (self$rv$status[i] != global$VALIDATED && max.val > i)
-          self$rv$status[i] <- global$SKIPPED
-      }
-    },
-    
-    #' @description
-    #' et to skipped all steps of the current object
-    #' 
-    #' @return Nothing.
-    #' 
-    Set_All_Reset = function(){
-      if(verbose) cat(paste0(class(self)[1], '::', 'Set_All_Reset() from - ', self$id, '\n\n'))
-      
-      private$BasicReset()
-    },
-    
     
     
     
