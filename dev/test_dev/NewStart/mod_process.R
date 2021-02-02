@@ -50,7 +50,8 @@ mod_process_ui <- function(id){
    div(id = ns('Screens'),
        uiOutput(ns('SkippedInfoPanel')),
        uiOutput(ns('EncapsulateScreens'))
-   )
+   ),
+  uiOutput(ns('show_Debug_Infos'))
   )
 }
     
@@ -60,38 +61,282 @@ mod_process_ui <- function(id){
 mod_process_server <- function(id,
                                name = NULL,
                                dataIn = NULL,
-                               orientation = 'h',
-                               .config = NULL){
-  #' @field modal_txt xxx
-  modal_txt <- "This action will reset this process. The input dataset will be the output of the last previous
-                      validated process and all further datasets will be removed"
-  #' @field orientation orientation of the timeline: horizontal ('h') (default) or vertical ('v)
-  orientation = 'h'
+                               orientation = 'h'){
   
+  
+  ###-------------------------------------------------------------###
+  ###                                                             ###
+  ### ------------------- MODULE SERVER --------------------------###
+  ###                                                             ###
+  ###-------------------------------------------------------------###
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-  rv.process <- reactiveValues(
-    status = c(0, 0, 0),
-    dataIn = NULL,
-    temp.dataIn = NULL,
-    current.pos = 1,
-    tl.tags.enabled = c(1, 1, 1),
-    test = NULL,
-    length = NULL,
-    config = NULL,
-    local.reset = NULL,
-    isAllSkipped = FALSE,
-    isAllUndone = TRUE,
-    isReseted = NULL,
-    isSkipped = NULL
-  )
+    #' @field modal_txt xxx
+    modal_txt <- "This action will reset this process. The input dataset will be the output of the last previous
+                      validated process and all further datasets will be removed"
+    #' @field orientation orientation of the timeline: horizontal ('h') (default) or vertical ('v)
+    orientation = 'h'
+    
+    #' @field global xxxx
+    global <- list(
+      VALIDATED = 1,
+      UNDONE = 0,
+      SKIPPED = -1
+    )
+     
+    
+    rv.process <- reactiveValues(
+      status = NULL,
+      dataIn = NULL,
+      temp.dataIn = NULL,
+      current.pos = 1,
+      tl.tags.enabled = NULL,
+      test = NULL,
+      length = NULL,
+      config = NULL,
+      local.reset = NULL,
+      isAllSkipped = FALSE,
+      isAllUndone = TRUE,
+      isReseted = NULL,
+      isSkipped = NULL
+    )
+    
+    
+    
+    observeEvent(name, {
+      
+      source(file.path('.', paste0('def_', name, '.R')), local=TRUE)$value
+      
+      rv.process$config <- config
+      check <- CheckConfig(rv.process$config)
+      if (!check$passed)
+        stop(paste0("Errors in 'rv.process$config'", paste0(check$msg, collapse=' ')))
+      #else
+      # rv.process$config <- rv.process$config
+      
+      rv.process$config$mandatory <- setNames(rv.process$config$mandatory, rv.process$config$steps)
+      rv.process$status = setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
+      rv.process$currentStepName <- reactive({rv.process$config$steps[rv.process$current.pos]})
+      rv.process$tl.tags.enabled = setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
+      
+     
+      
+    }, priority=1000)  
+    
+    
+    mod_timeline_server(id = 'timeline',
+                        config =  rv.process$config,
+                        status = reactive({rv.process$status}),
+                        position = reactive({rv.process$current.pos}),
+                        enabled = reactive({rv.process$tl.tags.enabled})
+    )
+    
+    
+    #' @description
+    #' Default actions on reset pipeline or process.
+    #' 
+    BasicReset = function(){
+      if(verbose) cat(paste0('BasicReset() from - ', id, '\n\n'))
+      ResetScreens()
+      rv.process$dataIn <- NULL
+      rv.process$current.pos <- 1
+      Initialize_Status_Process()
+      Send_Result_to_Caller()
+    }
+    
+    
+    
+    
+    #' @description
+    #' Set widgets of all screens to their default values.
+    #' 
+    ResetScreens = function(){
+      if(verbose) cat(paste0('::ResetScreens() from - ', id, '\n\n'))
+      
+      lapply(1:length(rv.process$config$steps), function(x){
+        shinyjs::reset(rv.process$config$steps[x])
+      })
+    }
+    
+    # Check if the rv.process$config is correct
+    #'
+    #' @param conf A list containing the rv.process$configuration of the current object.
+    #' See xxx
+    #' 
+    CheckConfig = function(conf){
+      if(verbose) cat(paste0('::Checkrv.process$config() from - ', id, '\n\n'))
+      passed <- T
+      msg <- ""
+      if (!is.list(conf)){
+        passed <- F
+        msg <- c(msg, "'rv.process$config' is not a list")
+      }
+      if (length(conf)!=3){
+        passed <- F
+        msg <- c(msg, "The length of 'rv.process$config' is not equal to 4")
+      }
+      names.conf <- c("name", "steps", "mandatory")
+      if (!all(sapply(names.conf, function(x){x %in% names(conf)}))){
+        passed <- F
+        msg <- c(msg, "The names of elements in 'rv.process$config' must be the following: 'name', 'steps', 'mandatory'")
+      }
+      if (length(conf$steps) != length(conf$mandatory)){
+        passed <- F
+        msg <- c(msg, "The length of 'steps' and 'mandatory' must be equal.")
+      }
+      
+      passed <- T
+      list(passed=passed,
+           msg = msg)
+    }
+    
+    
+    #' @description
+    #' xxxx
+    #'
+    Send_Result_to_Caller = function(){
+      if(verbose) cat(paste0('::Send_Result_to_Caller() from - ', id, '\n\n'))
+      rv.process$dataOut$trigger <- Timestamp()
+      rv.process$dataOut$value <- rv.process$dataIn
+    }
+    
+    #' @description 
+    #' xxx
+    #' 
+    InitializeDataIn = function(){ 
+      if(verbose) cat(paste0('InitializeDataIn() from - ', id, '\n\n'))
+      rv.process$dataIn <- rv.process$temp.dataIn
+    }
+    
+    
+    #' @description
+    #' Validate a given position. To be used by xxx
+    #' 
+    #' @return Nothing.
+    #' 
+    ValidateCurrentPos <- function(){
+      rv.process$status[rv.process$current.pos] <- global$VALIDATED
+      # Either the process has been validated, one can prepare data to be sent to caller
+      # Or the module has been reseted
+      if (rv.process$current.pos == length(rv.process$config$steps))
+        Send_Result_to_Caller()
+    }
+    
+    
+    #' @description
+    #' Gives the name of the status corresponding to the code (integer).
+    #'
+    #' @param name A number
+    #' 
+    GetStringStatus = function(name){
+      if (name==global$VALIDATED) "Validated"
+      else if (name==global$UNDONE) "Undone"
+      else if (name==global$SKIPPED) 'Skipped'
+    }
+    
+    #' @description 
+    #' Returns the date and time in timestamp UNIX format.
+    #' 
+    Timestamp = function(){ 
+      if(verbose) cat(paste0('::Timestamp() from - ', id, '\n\n'))
+      as.numeric(Sys.time())
+    }
+    
+    
+    
+    #' @description 
+    #' xxx
+    #' 
+    GetMaxValidated_AllSteps = function(){
+      if(verbose) cat(paste0( '::', 'GetMaxValidated_AllSteps() from - ', id, '\n\n'))
+      val <- 0
+      ind <- grep(global$VALIDATED, rv.process$status)
+      if (length(ind) > 0) 
+        val <-max(ind)
+      val
+    }
+    
+    
+    
+    #' @description 
+    #' xxx
+    #'
+    #' @param range xxx
+    #' 
+    GetFirstMandatoryNotValidated = function(range){
+      if(verbose) cat(paste0('::', 'GetFirstMandatoryNotValidated() from - ', id, '\n\n'))
+      first <- NULL
+      first <- unlist((lapply(range, 
+                              function(x){rv.process$config$mandatory[x] && !rv.process$status[x]})))
+      if (sum(first) > 0)
+        min(which(first == TRUE))
+      else
+        NULL
+    }
+    
+    
+    #' @description 
+    #' Return the UI for a modal dialog with data selection input. If 'failed' is
+    #' TRUE, then display a message that the previous value was invalid.
+    #' 
+    dataModal = function() {
+      
+      tags$div(id="modal1", 
+               modalDialog(
+                 span(modal_txt),
+                 footer = tagList(
+                   actionButton(ns("closeModal"), "Cancel", class='btn-info'),
+                   actionButton(ns("modal_ok"), "OK")
+                 )
+               )
+      )
+    }
+    
+    #' @description 
+    #' xxx
+    #' 
+    Initialize_Status_Process = function(){
+      if(verbose) cat(paste0('::', 'Initialize_Status_Process() from - ', id, '\n\n'))
+      rv.process$status <- setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
+    }
+    
+    #' @description
+    #' et to skipped all steps of the current object
+    #' 
+    #' @return Nothing.
+    #' 
+    Set_All_Skipped = function(){
+      if(verbose) cat(paste0('::', 'Set_All_Skipped() from - ', id, '\n\n'))
+      rv.process$status <- setNames(rep(global$SKIPPED, length(rv.process$config$steps)), rv.process$config$steps)
+    }
+    
+    #' @description
+    #' et to skipped all steps of the current object
+    #' 
+    #' @return Nothing.
+    #' 
+    Discover_Skipped_Steps = function(){
+      if(verbose) cat(paste0('::Discover_Skipped_Status() from - ', id, '\n\n'))
+      for (i in 1:length(rv.process$config$steps)){
+        max.val <- GetMaxValidated_AllSteps()
+        if (rv.process$status[i] != global$VALIDATED && max.val > i)
+          rv.process$status[i] <- global$SKIPPED
+      }
+    }
+    
+    #' @description
+    #' et to skipped all steps of the current object
+    #' 
+    #' @return Nothing.
+    #' 
+    Set_All_Reset = function(){
+      if(verbose) cat(paste0('::', 'Set_All_Reset() from - ', id, '\n\n'))
+      
+      BasicReset()
+    }
   
-  global <- list(
-    VALIDATED = 1,
-    UNDONE = 0,
-    SKIPPED = -1
-  )
+  
   
   
   #' # Declaration of variables
@@ -109,14 +354,7 @@ mod_process_server <- function(id,
   #' length = NULL,
   #' #' @field original.length xxx
   #' original.length = NULL,
-  #' #' @field config xxx
-  #' config = NULL,
-  #' #' @field screens xxx
-  #' screens = NULL,
-  #' #' @field modal_txt xxx
-  #' modal_txt = NULL,
-  #' #' @field timeline xxx
-  #' timeline  = NULL,
+
   #' 
   #' #' @field default_pos xxx
   #' default_pos <- list(VALIDATED = 1,
@@ -132,139 +370,12 @@ mod_process_server <- function(id,
 
   
   
-  observeEvent(.config, {
-    check <- CheckConfig(.config)
-      if (!check$passed)
-        stop(paste0("Errors in 'config'", paste0(check$msg, collapse=' ')))
-      else
-        config <- .config
-    
-      config$mandatory <- setNames(config$mandatory, config$steps)
-      rv.process$status = setNames(rep(global$UNDONE, length(config$steps)), config$steps)
-      rv.process$tl.tags.enabled = setNames(rep(FALSE, length(config$steps)), config$steps)
-      
-      rv.process$currentStepName <- reactive({config$steps[rv.process$current.pos]})
-  })   
+   
 
-  
-  observeEvent(name, {
-  rv.process$config <- list(name = 'Description',
-                 steps = c('Description'),
-                 mandatory = c(T)
-  )
-  })
-  
-  
+
   ##
   ## Common functions
   ##
-  
-  #' @description
-  #' Default actions on reset pipeline or process.
-  #' 
-  BasicReset = function(){
-    if(verbose) cat(paste0('BasicReset() from - ', id, '\n\n'))
-    ResetScreens()
-    rv.process$dataIn <- NULL
-    rv.process$current.pos <- 1
-    Initialize_Status_Process()
-    Send_Result_to_Caller()
-  }
-  
-  #' @description
-  #' Set widgets of all screens to their default values.
-  #' 
-  ResetScreens = function(){
-    if(self$verbose) cat(paste0('::ResetScreens() from - ', id, '\n\n'))
-    
-    lapply(1:length(rv.process$config$steps), function(x){
-      shinyjs::reset(rv.process$config$steps[x])
-    })
-  }
-  
-  # Check if the config is correct
-  #'
-  #' @param conf A list containing the configuration of the current object.
-  #' See xxx
-  #' 
-  CheckConfig = function(conf){
-    if(verbose) cat(paste0('::CheckConfig() from - ', id, '\n\n'))
-    passed <- T
-    msg <- ""
-    if (!is.list(conf)){
-      passed <- F
-      msg <- c(msg, "'config' is not a list")
-    }
-    if (length(conf)!=3){
-      passed <- F
-      msg <- c(msg, "The length of 'config' is not equal to 4")
-    }
-    names.conf <- c("name", "steps", "mandatory")
-    if (!all(sapply(names.conf, function(x){x %in% names(conf)}))){
-      passed <- F
-      msg <- c(msg, "The names of elements in 'config' must be the following: 'name', 'steps', 'mandatory'")
-    }
-    if (length(conf$steps) != length(conf$mandatory)){
-      passed <- F
-      msg <- c(msg, "The length of 'steps' and 'mandatory' must be equal.")
-    }
-    
-    passed <- T
-    list(passed=passed,
-         msg = msg)
-  }
-  
-  
-  #' @description
-  #' xxxx
-  #'
-  Send_Result_to_Caller = function(){
-    if(verbose) cat(paste0('::Send_Result_to_Caller() from - ', id, '\n\n'))
-    rv.process$dataOut$trigger <- Timestamp()
-    rv.process$dataOut$value <- rv.process$dataIn
-  }
-  
-  #' @description 
-  #' xxx
-  #' 
-  InitializeDataIn = function(){ 
-    if(verbose) cat(paste0('InitializeDataIn() from - ', id, '\n\n'))
-    rv.process$dataIn <- rv.process$temp.dataIn
-  }
-  
-  
-  #' @description
-  #' Validate a given position. To be used by xxx
-  #' 
-  #' @return Nothing.
-  #' 
-  ValidateCurrentPos <- function(){
-    rv.process$status[rv.process$current.pos] <- global$VALIDATED
-    # Either the process has been validated, one can prepare data to be sent to caller
-    # Or the module has been reseted
-    if (rv.process$current.pos == length(rv.process$config$steps))
-      Send_Result_to_Caller()
-  }
-  
-  
-  #' @description
-  #' Gives the name of the status corresponding to the code (integer).
-  #'
-  #' @param name A number
-  #' 
-  GetStringStatus = function(name){
-    if (name==global$VALIDATED) "Validated"
-    else if (name==global$UNDONE) "Undone"
-    else if (name==global$SKIPPED) 'Skipped'
-  }
-  
-  #' @description 
-  #' Returns the date and time in timestamp UNIX format.
-  #' 
-  Timestamp = function(){ 
-    if(verbose) cat(paste0('::Timestamp() from - ', id, '\n\n'))
-    as.numeric(Sys.time())
-  }
   
   #' @description 
   #' xxx
@@ -273,7 +384,7 @@ mod_process_server <- function(id,
     if(verbose) cat(paste0('::', 'Update_State_Screens() from - ', id, '\n\n'))
     
     ind.max <- GetMaxValidated_AllSteps()
-    
+    #browser()
     if (ind.max > 0) # No step validated: init or reset of timeline 
       ToggleState_Screens(cond = FALSE, range = 1:ind.max)
     
@@ -281,7 +392,7 @@ mod_process_server <- function(id,
     if (ind.max < length(rv.process$config$steps)){
       # Enable all steps after the current one but the ones
       # after the first mandatory not validated
-      firstM <- private$GetFirstMandatoryNotValidated((ind.max+1):length(rv.process$config$steps))
+      firstM <- GetFirstMandatoryNotValidated((ind.max+1):length(rv.process$config$steps))
       if (is.null(firstM)){
         ToggleState_Screens(cond = TRUE, range = (1 + ind.max):(length(rv.process$config$steps)))
       } else {
@@ -291,18 +402,25 @@ mod_process_server <- function(id,
       }
     }
   }
-  
-  #' @description 
+  #' @description
   #' xxx
+  #'
+  #' @param cond A number
+  #' @param range A number
   #' 
-  GetMaxValidated_AllSteps = function(){
-    if(verbose) cat(paste0( '::', 'GetMaxValidated_AllSteps() from - ', id, '\n\n'))
-    val <- 0
-    ind <- grep(global$VALIDATED, rv.process$status)
-    if (length(ind) > 0) 
-      val <-max(ind)
-    val
+  #' @return Nothing.
+  #' 
+  ToggleState_Screens = function(cond, range){
+    if(verbose) cat(paste0('::ToggleState_Steps() from - ', id, '\n\n'))
+    #browser()
+    lapply(range, function(x){
+      cond <- cond && !(rv.process$status[x] == global$SKIPPED)
+      shinyjs::toggleState(rv.process$config$steps[x], condition = cond  )
+      #Send to TL the enabled/disabled tags
+      rv.process$tl.tags.enabled[x] <- cond
+    })
   }
+  
   
   #' @description 
   #' xxx
@@ -312,104 +430,11 @@ mod_process_server <- function(id,
   ToggleState_ResetBtn = function(cond){
     if(verbose) cat(paste0( '::', 'ToggleState_ResetBtn(', cond, ')) from - ', id, '\n\n'))
     
-    shinyjs::toggleState(ns('rstBtn'), condition = cond)
+    shinyjs::toggleState('rstBtn', condition = cond)
   }
-  
-  #' @description 
-  #' xxx
-  #'
-  #' @param range xxx
-  #' 
-  GetFirstMandatoryNotValidated = function(range){
-    if(self$verbose) cat(paste0('::', 'GetFirstMandatoryNotValidated() from - ', id, '\n\n'))
-    first <- NULL
-    first <- unlist((lapply(range, 
-                            function(x){rv.process$config$mandatory[x] && !rv.process$status[x]})))
-    if (sum(first) > 0)
-      min(which(first == TRUE))
-    else
-      NULL
-  }
-  
-  
-  #' @description 
-  #' Return the UI for a modal dialog with data selection input. If 'failed' is
-  #' TRUE, then display a message that the previous value was invalid.
-  #' 
-  dataModal = function() {
-    
-    tags$div(id="modal1", 
-             modalDialog(
-               span(modal_txt),
-               footer = tagList(
-                 actionButton(ns("close"), "Cancel", class='btn-info'),
-                 actionButton(ns("modal_ok"), "OK")
-               )
-             )
-    )
-  }
-  
-  #' @description 
-  #' xxx
-  #' 
-  Initialize_Status_Process = function(){
-    if(verbose) cat(paste0('::', 'Initialize_Status_Process() from - ', id, '\n\n'))
-    rv.process$status <- setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
-  }
-  
-  
-  
-  
-  
-  #--------------------------- Definition of the screens of the process--------------------------------
-  Description_ui <- function(id){
-    list(Description = uiOutput(ns('Description')))
-  }
-  
-  Description_server <- function(id, input, output, session){
-    output$Description <- renderUI({
-      wellPanel(
-        tagList(
-          includeMarkdown( system.file("app/md", paste0(rv.process$config$name, ".md"), package="Magellan")),
-          uiOutput(ns('datasetDescription')),
-          actionButton(ns('btn_validate_Description'), 
-                       paste0('Start ', rv.process$config$name),
-                       class = btn_success_color)
-        )
-      )
-    })
-    
-    observeEvent(input$btn_validate_Description, ignoreInit = T, ignoreNULL=T, {
-      print(input$btn_validate_Description)
-
-      InitializeDataIn()
-      ValidateCurrentPos()
-    })
-  }
-   #-------------------------------------------------------------------------------
-  observe({
-    #req(config)
-    rv.process$length <- length(rv.process$config$steps)
-    # rv.process$test <- mod_Description_server('toto',
-    #                                           dataIn = reactive({}),
-    #                                           status = reactive({rv.process$status}),
-    #                                           current.pos = reactive({rv.process$current.pos})
-    #                                           )
-    #Description_server(ns('toto'), input, output, session)
-  })
- 
-  Description_server('toto', input, output, session)
-  
-  mod_timeline_server(id = 'timeline',
-                      config =  rv.process$config,
-                      status = reactive({rv.process$status}),
-                      position = reactive({rv.process$current.pos}),
-                      enabled = reactive({rv.process$tl.tags.enabled})
-                      )
   
   output$SkippedInfoPanel <- renderUI({
-    #if (self$verbose) cat(paste0(class(self)[1], '::output$SkippedInfoPanel from - ', self$id, '\n\n'))
-    #browser()
+    #if (verbose) cat(paste0(class(self)[1], '::output$SkippedInfoPanel from - ', self$id, '\n\n'))
     
     current_step_skipped <- rv.process$status[rv.process$current.pos] == global$SKIPPED
     entire_process_skipped <- isTRUE(sum(rv.process$status) == global$SKIPPED * rv.process$length)
@@ -431,107 +456,45 @@ mod_process_server <- function(id,
       )
     }
   })
- 
- 
-  #' @description
-  #' xxx
-  #'
-  #' @param cond A number
-  #' @param range A number
-  #' 
-  #' @return Nothing.
-  #' 
-  ToggleState_Screens = function(cond, range){
-    if(verbose) cat(paste0('::ToggleState_Steps() from - ', id, '\n\n'))
-    #browser()
-    lapply(range, function(x){
-      cond <- cond && !(rv.process$status[x] == global$SKIPPED)
-      shinyjs::toggleState(ns(rv.process$config$steps[x]), condition = cond  )
-      #Send to TL the enabled/disabled tags
-      rv.process$tl.tags.enabled[x] <- cond
-    })
-  }
-  
-  
-  #' @description
-  #' et to skipped all steps of the current object
-  #' 
-  #' @return Nothing.
-  #' 
-  Set_All_Skipped = function(){
-    if(verbose) cat(paste0('::', 'Set_All_Skipped() from - ', id, '\n\n'))
-    rv.process$status <- setNames(rep(global$SKIPPED, length(rv.process$config$steps)), rv.process$config$steps)
-  }
-  
-  #' @description
-  #' et to skipped all steps of the current object
-  #' 
-  #' @return Nothing.
-  #' 
-  Discover_Skipped_Steps = function(){
-    if(verbose) cat(paste0('::Discover_Skipped_Status() from - ', id, '\n\n'))
-    for (i in 1:length(rv.process$config$steps)){
-      max.val <- GetMaxValidated_AllSteps()
-      if (rv.process$status[i] != global$VALIDATED && max.val > i)
-        rv.process$status[i] <- global$SKIPPED
-    }
-  }
-  
-  #' @description
-  #' et to skipped all steps of the current object
-  #' 
-  #' @return Nothing.
-  #' 
-  Set_All_Reset = function(){
-    if(verbose) cat(paste0('::', 'Set_All_Reset() from - ', id, '\n\n'))
-    
-    BasicReset()
-  }
   
   
  output$EncapsulateScreens <- renderUI({
-   #if(verbose) cat(paste0(class(self)[1], '::EncapsulateScreens() from - ', self$id, '\n\n'))
-   #browser()
-   # lapply(1:rv.process$length, function(i) {
-   #   shinyjs::disabled(
-   #     if (i==1)
-   #       div(id = ns(config$steps[i]),
-   #           class = paste0("page_", id),
-   #           screens()[[i]]
-   #       )
-   #     else
-   #       shinyjs::hidden(
-   #         div(id = ns(config$steps[i]),
-   #             class = paste0("page_", id),
-   #             screens()[[i]]
-   #         )
-   #       )
-   #   )
-   # }
-   # )
- 
-   lapply(1:length(rv.process$config$steps), function(i) {
-     
+     lapply(1:length(rv.process$config$steps), function(i) {
        if (i==1)
-         div(id = ns(rv.process$steps[i]),
+         div(id = ns(paste0('div_', rv.process$config$steps[i])),
              class = paste0("page_", id),
-             Description_ui(ns('toto'))[[i]]
-             #rv.process$test$ui()[[i]]
+             do.call(uiOutput, list(ns(rv.process$config$steps[i])))
          )
        else
          shinyjs::hidden(
-           div(id = ns(rv.process$steps[i]),
+           div(id = ns(paste0('div_', rv.process$config$steps[i])),
                class = paste0("page_", id),
-               Description_ui(ns('toto'))[[i]]
-               #rv.process$test$ui()[[i]]
+               do.call(uiOutput, list(ns(rv.process$config$steps[i])))
            )
          )
-    
    })
-   
- }
- )
+ })
  
+ 
+ #' @description 
+ #' xxx
+ #' 
+ #' @param i xxx
+ #' 
+ Change_Current_Pos = function(i){ rv.process$current.pos <- i}
+ 
+ #-------------------------------------------------------
+ observeEvent(rv.process$current.pos, ignoreInit = F,{
+    if (verbose) cat(paste0('::observe(rv$current.pos) from - ', id, '\n\n'))
+   
+   shinyjs::toggleState(id = "prevBtn", condition = rv.process$current.pos > 1)
+   shinyjs::toggleState(id = "nextBtn", condition = rv.process$current.pos < length(rv.process$config$steps))
+   shinyjs::hide(selector = paste0(".page_", id))
+   shinyjs::show(paste0('div_', rv.process$config$steps[rv.process$current.pos]))
+   
+   #ActionOn_NewPosition()
+   
+ })
  
  #' @description
  #' Change current position.
@@ -546,7 +509,6 @@ mod_process_server <- function(id,
      browser()
    
    rv.process$current.pos <- newval
-   cat(paste0('new position = ', rv.process$current.pos, '\n'))
  }
  
  observeEvent(input$prevBtn, ignoreInit = TRUE, {NavPage(-1)})
@@ -572,7 +534,7 @@ mod_process_server <- function(id,
        print('dataIn() NULL')
        
        ToggleState_Screens(FALSE, 1:length(rv.process$config$steps))
-       # self$ToggleState_ResetBtn(FALSE)
+       # ToggleState_ResetBtn(FALSE)
        rv.process$original.length <- 0
      } else { # A new dataset has been loaded
        print('dataIn() not NULL')
@@ -581,7 +543,7 @@ mod_process_server <- function(id,
        rv.process$original.length <- length(dataIn())
        
        Update_State_Screens()
-       #self$ToggleState_Screens(TRUE, 1:self$length)
+       #ToggleState_Screens(TRUE, 1:self$length)
        
      }
    }
@@ -592,45 +554,22 @@ mod_process_server <- function(id,
  # Catch new status event
  
  observeEvent(rv.process$status, ignoreInit = T, {
-   if (verbose) cat(paste0('::observe((self$rv$status) from - ', id, '\n\n'))
+   if (verbose) cat(paste0('::observe((rv$status) from - ', id, '\n\n'))
    #browser()
    Discover_Skipped_Steps()
    # https://github.com/daattali/shinyjs/issues/166
    # https://github.com/daattali/shinyjs/issues/25
    Update_State_Screens()
    
-   #shinyjs::delay(1000, private$Update_State_Screens())
+   #shinyjs::delay(1000, Update_State_Screens())
  })
- 
- #' @description 
- #' xxx
- #' 
- #' @param i xxx
- #' 
- Change_Current_Pos = function(i){ rv.process$current.pos <- i}
- 
- #-------------------------------------------------------
- observeEvent(rv.process$current.pos, ignoreInit = T,{
-  # if (verbose) cat(paste0(class(self)[1], '::observe(self$rv$current.pos) from - ', id, '\n\n'))
-   
-   shinyjs::toggleState(id = "prevBtn", condition = rv.process$current.pos > 1)
-   shinyjs::toggleState(id = "nextBtn", condition = rv.process$current.pos < length(rv.process$config$steps))
-   shinyjs::hide(selector = paste0(".page_", id))
-   # shinyjs::show(config$steps[rv.process$current.pos])
-   
-   #ActionOn_NewPosition()
-   
- })
- 
- 
- 
  
  observeEvent(input$rstBtn, {
    if (verbose) cat(paste0('::observeEvent(input$rstBtn) from - ', id, '\n\n'))
    showModal(dataModal())
  })
  
- observeEvent(input$close, {removeModal() })
+ observeEvent(input$closeModal, {removeModal() })
  
  
  observeEvent(req(input$modal_ok > 0), ignoreInit=F, {
@@ -664,10 +603,23 @@ mod_process_server <- function(id,
      )
    }
  })
- 
- observeEvent(input$prevBtn, ignoreInit = TRUE, {private$NavPage(-1)})
- observeEvent(input$nextBtn, ignoreInit = TRUE, {private$NavPage(1)})
- 
+
+ output$show_Debug_Infos <- renderUI({
+      fluidRow(
+        column(width=2,
+               tags$b(h4(style = 'color: blue;', paste0("Global input of ", rv.process$config$type))),
+               uiOutput(ns('show_dataIn'))),
+        column(width=2,
+               tags$b(h4(style = 'color: blue;', paste0("Temp input of ", rv.process$config$type))),
+               uiOutput(ns('show_rv_dataIn'))),
+        column(width=2,
+               tags$b(h4(style = 'color: blue;', paste0("Output of ", rv.process$config$type))),
+               uiOutput(ns('show_rv_dataOut'))),
+        column(width=4,
+               tags$b(h4(style = 'color: blue;', "status")),
+               uiOutput(ns('show_status')))
+      )
+ })
  
  ###########---------------------------#################
  output$show_dataIn <- renderUI({
@@ -691,8 +643,8 @@ mod_process_server <- function(id,
  output$show_rv_dataOut <- renderUI({
    if (verbose) cat(paste0('::output$show_rv_dataOut from - ', id, '\n\n'))
    tagList(
-     #h4('show self$dataOut$value'),
-     lapply(names(rv.process$dataOut$value), function(x){tags$p(x)})
+     #h4('show dataOut$value'),
+     lapply(names(dataOut$value), function(x){tags$p(x)})
    )
  })
  
@@ -710,7 +662,7 @@ mod_process_server <- function(id,
                   }))
  })
  
- reactive({rv.process$dataOut})
+ reactive({dataOut})
  
          
   }

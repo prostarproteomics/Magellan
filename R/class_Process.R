@@ -13,7 +13,7 @@ Process = R6::R6Class(
   "Process",
   inherit = ScreenManager,
   private = list(
-
+    
     #' @description
     #' xxx
     #'
@@ -24,38 +24,19 @@ Process = R6::R6Class(
     #' 
     GetScreens_server = function(session, input, output){
       if(verbose) cat(paste0(class(self)[1], '::GetScreens() from - ', self$id, '\n\n'))
-      # setNames(lapply(self$config$steps, function(x){
-      #   eval(parse(text = paste0("self$", x, '_server(session, input, output)')))
-      # }),
-      # self$config$steps)
-      
-      mod_processA_server('tutu')
-      
-      
+      setNames(lapply(self$config$steps, function(x){
+        eval(parse(text = paste0("self$", x, '_server(session, input, output)')))
+      }),
+      self$config$steps)
     }
-    ),
-
+  ),
+  
   public = list(
     #' @field modal_txt xxx
     modal_txt = "This action will reset this process. The input dataset will be the output of the last previous
                       validated process and all further datasets will be removed",
     
     
-    #' @description
-    #' et to skipped all steps of the current object
-    #' 
-    #' @return Nothing.
-    #' 
-    GetScreens_ui = function(){
-      if(verbose) cat(paste0(class(self)[1], '::GetScreens() from - ', self$id, '\n\n'))
-      
-      # setNames(lapply(self$config$steps, function(x){
-      #   eval(parse(text = paste0("self$", x, '_ui()')))
-      # }),
-      # self$config$steps)
-      
-      setNames(mod_processA_ui(self$ns('tutu')),self$config$steps)
-    },
     #' @description
     #' xxx
     #'
@@ -75,7 +56,7 @@ Process = R6::R6Class(
       })
     },
     
-
+    
     #' @description
     #' et to skipped all steps of the current object
     #' 
@@ -138,7 +119,6 @@ Process = R6::R6Class(
     EncapsulateScreens = function(){
       if(verbose) cat(paste0(class(self)[1], '::EncapsulateScreens() from - ', self$id, '\n\n'))
       lapply(1:self$length, function(i) {
-        shinyjs::disabled(
           if (i==1)
             div(id = self$ns(self$config$steps[i]),
                 class = paste0("page_", self$id),
@@ -151,9 +131,22 @@ Process = R6::R6Class(
                   self$screens[[i]]
               )
             )
-        )
       }
       )
+    },
+    
+    #' @description
+    #' et to skipped all steps of the current object
+    #' 
+    #' @return Nothing.
+    #' 
+    GetScreens_ui = function(){
+      if(verbose) cat(paste0(class(self)[1], '::GetScreens() from - ', self$id, '\n\n'))
+      
+      setNames(lapply(self$config$steps, function(x){
+        eval(parse(text = paste0("self$", x, '_ui()')))
+      }),
+      self$config$steps)
     }
   )
 )

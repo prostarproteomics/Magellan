@@ -3,7 +3,7 @@ library(shinydashboard)
 
 source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
 source(file.path('.', 'mod_process.R'), local=TRUE)$value
-source(file.path('.', 'mod_TestProcess.R'), local=TRUE)$value
+#source(file.path('.', 'mod_TestProcess.R'), local=TRUE)$value
 
 
 ui <- dashboardPage(
@@ -48,7 +48,16 @@ server <- function(input, output) {
     
   })
   
-  mod_process_server('process')
+  
+  config <- list(name = 'Normalization',
+                 steps = c('Description', 'Step1', 'Step2', 'Step3'),
+                 mandatory = c(T, T, T, T)
+  )
+  
+  mod_process_server('process', 
+                     name = 'Normalization',
+                     dataIn = reactive({NULL}),
+                     .config = config)
 }
 
 shinyApp(ui, server)
