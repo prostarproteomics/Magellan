@@ -9,6 +9,7 @@ options(shiny.fullstacktrace = T)
 #------------------------ Class TimelineDraw -----------------------------------
 source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
 source(file.path('.', 'mod_process.R'), local=TRUE)$value
+source(file.path('.', 'mod_pipeline.R'), local=TRUE)$value
 
 
 redBtnClass <- "btn-danger"
@@ -21,7 +22,7 @@ btn_style <- "display:inline-block; vertical-align: middle; padding: 7px"
 
 
 ui <- fluidPage(
-  mod_process_ui('Protein_Normalization')
+  mod_pipeline_ui('Protein')
 )
 
 
@@ -29,17 +30,16 @@ server <- function(input, output){
   utils::data(Exp1_R25_prot, package='DAPARdata2')
   
   obj <- NULL
-  #obj <- Exp1_R25_prot
+  obj <- Exp1_R25_prot
   
   rv <- reactiveValues(
     res = NULL
   )
-
+  
   observe({
-  rv$res <- mod_process_server('Protein_Normalization', 
-                               dataIn = reactive({obj}),
-                               tag.enabled = reactive({F})
-                               )
+    rv$res <- mod_pipeline_server(id = 'Protein', 
+                                 dataIn = reactive({obj})
+    )
   })
   
 }

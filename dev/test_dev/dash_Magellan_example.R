@@ -60,7 +60,7 @@ server <- function(session, input, output) {
   
   output$magellan <- renderUI({
     req(rv$pipe)
-    shinyjs::disabled(rv$pipe$ui())
+    rv$pipe$ui()
   })
   
   #------------------------------------------------
