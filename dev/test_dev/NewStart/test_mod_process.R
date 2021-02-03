@@ -29,7 +29,7 @@ server <- function(input, output){
   utils::data(Exp1_R25_prot, package='DAPARdata2')
   
   obj <- NULL
-  #obj <- Exp1_R25_prot
+  obj <- Exp1_R25_prot
   
   rv <- reactiveValues(
     res = NULL
@@ -38,7 +38,7 @@ server <- function(input, output){
   observe({
   rv$res <- mod_process_server('Protein_Normalization', 
                                dataIn = reactive({obj}),
-                               tag.enabled = reactive({F})
+                               tag.enabled = reactive({TRUE})
                                )
   })
   

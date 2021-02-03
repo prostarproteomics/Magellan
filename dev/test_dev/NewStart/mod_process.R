@@ -51,7 +51,12 @@ mod_process_ui <- function(id){
        uiOutput(ns('SkippedInfoPanel')),
        uiOutput(ns('EncapsulateScreens'))
    ),
-  uiOutput(ns('show_Debug_Infos'))
+  wellPanel(
+    tagList(
+      h3('module process'),
+      uiOutput(ns('show_Debug_Infos'))
+    )
+  )
   )
 }
     
@@ -62,6 +67,8 @@ mod_process_server <- function(id,
                                dataIn = NULL,
                                tag.enabled = reactive({TRUE}),
                                reset = reactive({FALSE}),
+                               position = reactive({NULL}),
+                               skipped = reactive({NULL}),
                                orientation = 'h'){
   
   
@@ -116,17 +123,19 @@ mod_process_server <- function(id,
         stop(paste0("Errors in 'rv.process$config'", paste0(check$msg, collapse=' ')))
       #else
       # rv.process$config <- rv.process$config
-      
+     # browser()
       rv.process$config$mandatory <- setNames(rv.process$config$mandatory, rv.process$config$steps)
       rv.process$status = setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
       rv.process$currentStepName <- reactive({rv.process$config$steps[rv.process$current.pos]})
-      rv.process$tl.tags.enabled = setNames(rep(tag.enabled(), length(rv.process$config$steps)), rv.process$config$steps)
+      rv.process$tl.tags.enabled = setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
+      #browser()
     }, priority=1000)  
     
     
-    observeEvent(tag.enabled(), ignoreNULL=F,{
-      rv.process$tl.tags.enabled <- setNames(rep(tag.enabled(), length(rv.process$config$steps)), rv.process$config$steps)
-    browser()
+    observeEvent(tag.enabled(), ignoreNULL = FALSE, ignoreInit = TRUE, {
+     # browser()
+      if (!isTRUE(tag.enabled()))
+        rv.process$tl.tags.enabled <- setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
     })
     
     mod_timeline_server(id = 'timeline',
@@ -136,6 +145,10 @@ mod_process_server <- function(id,
                         enabled = reactive({rv.process$tl.tags.enabled})
     )
     
+    
+    observeEvent(position(), {
+      rv.process$current.pos <-position()
+    })
     
     #' @description
     #' Default actions on reset pipeline or process.
@@ -339,32 +352,6 @@ mod_process_server <- function(id,
       
       BasicReset()
     }
-  
-  
-  
-  
-  #' # Declaration of variables
-  #' #' @field id xxx
-  #' id = NULL,
-  #' #' @field ns xxx
-  #' ns = NULL,
-  #' #' @field verbose xxx
-  #' verbose = TRUE,
-  #' #' @field currentStepName xxx
-  #' currentStepName = NULL,
-  #' #' @field child.process xxx
-  #' child.process = NULL,
-  #' #' @field length xxx
-  #' length = NULL,
-  #' #' @field original.length xxx
-  #' original.length = NULL,
-
-  #' 
-  #' #' @field default_pos xxx
-  #' default_pos <- list(VALIDATED = 1,
-  #'                    SKIPPED = 1,
-  #'                    UNDONE = 1)
-
 
   #' @field dataOut xxx
   dataOut <- reactiveValues(
@@ -373,9 +360,6 @@ mod_process_server <- function(id,
   )
 
   
-  
-   
-
 
   ##
   ## Common functions
@@ -386,7 +370,7 @@ mod_process_server <- function(id,
   #' 
   Update_State_Screens = function(){
     if(verbose) cat(paste0('::', 'Update_State_Screens() from - ', id, '\n\n'))
-    
+    #browser()
     ind.max <- GetMaxValidated_AllSteps()
     #browser()
     if (ind.max > 0) # No step validated: init or reset of timeline 
@@ -418,15 +402,15 @@ mod_process_server <- function(id,
   #' 
   ToggleState_Screens = function(cond, range){
     if(verbose) cat(paste0('::ToggleState_Steps() from - ', id, '\n\n'))
-    #browser()
-    lapply(range, function(x){
-      cond <- cond && !(rv.process$status[x] == global$SKIPPED)
-      #shinyjs::toggleState(rv.process$config$steps[x], condition = cond  )
-      
-      #Send to TL the enabled/disabled tags
-      if (tag.enabled())
+   # browser()
+    if (tag.enabled())
+      lapply(range, function(x){
+        cond <- cond && !(rv.process$status[x] == global$SKIPPED)
+        #shinyjs::toggleState(rv.process$config$steps[x], condition = cond  )
+        
+        #Send to TL the enabled/disabled tags
         rv.process$tl.tags.enabled[x] <- cond
-    })
+      })
   }
   
   
@@ -536,32 +520,32 @@ mod_process_server <- function(id,
    if (verbose) cat(paste0('::observeEvent(dataIn()) from --- ', id, '\n\n'))
    #browser()
    
-   action <- function()
-   {
+  # action <- function()
+   #{
      Change_Current_Pos(1)
      rv.process$temp.dataIn <- dataIn()
      #ActionOn_New_DataIn() # Used by class pipeline
      # shinyjs::toggleState('Screens', TRUE)
      
      if(is.null(dataIn())){
-       print('dataIn() NULL')
+       print('Process : dataIn() NULL')
        
        ToggleState_Screens(FALSE, 1:length(rv.process$config$steps))
        # ToggleState_ResetBtn(FALSE)
        rv.process$original.length <- 0
      } else { # A new dataset has been loaded
-       print('dataIn() not NULL')
+       print('Process : dataIn() not NULL')
        #shinyjs::toggleState('Screens', TRUE)
        ToggleState_ResetBtn(TRUE) #Enable the reset button
        rv.process$original.length <- length(dataIn())
        
        Update_State_Screens()
-       #ToggleState_Screens(TRUE, 1:self$length)
+       ToggleState_Screens(TRUE, 1)
        
      }
-   }
+  # }
    
-   shinyjs::delay(100, action())
+   #shinyjs::delay(100, action())
  })
  
  # Catch new status event

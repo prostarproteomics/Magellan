@@ -3,6 +3,7 @@ library(shinyWidgets)
 library(shinyjs)
 library(R6)
 library(tibble)
+library(MSPipelines)
 
 options(shiny.fullstacktrace = T)
 
@@ -38,7 +39,8 @@ server <- function(input, output){
   
   observe({
     rv$res <- mod_pipeline_server(id = 'Protein', 
-                                 dataIn = reactive({obj})
+                                 dataIn = reactive({obj}),
+                                 tag.enabled = reactive({TRUE})
     )
   })
   

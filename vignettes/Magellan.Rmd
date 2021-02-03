@@ -190,3 +190,14 @@ WHen the user navigates in the timelines, the steps previously validated are kep
 
 
 
+
+
+# Technical specifications
+
+## Module process
+
+At the beginning:
+
+* if dataIn() is NULL then all screens are disabled
+* else only the first screen is enabled
+
