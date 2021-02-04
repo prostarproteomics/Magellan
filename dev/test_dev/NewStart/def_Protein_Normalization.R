@@ -7,6 +7,7 @@ config <- list(name = 'Protein_Normalization',
 
 ###### ------------------- Code for Description (step 0) -------------------------    #####
 output$Description <- renderUI({
+  rv.process$tl.tags.enabled
   #browser()
   wellPanel(
     tagList(
@@ -53,6 +54,7 @@ observe({
 
 
 output$test1 <-renderUI({
+  rv.process$tl.tags.enabled
   if (rv.process$tl.tags.enabled['Step1'])
     selectInput(ns('select1'), 'Select 1 in renderUI', 
                                 choices = 1, 
@@ -68,6 +70,7 @@ output$test1 <-renderUI({
 
 
 output$test2 <-renderUI({
+  rv.process$tl.tags.enabled
   if (rv.process$tl.tags.enabled['Step1'])
     selectInput(ns('select2'), 'Select 2 in renderUI', 
                 choices = 1,
@@ -85,6 +88,7 @@ output$test2 <-renderUI({
 
 # ------------------------ STEP 1 : UI ------------------------------------
 output$Step1 <- renderUI({
+  rv.process$tl.tags.enabled
   name <- 'Step1'
   wellPanel(
     actionButton(ns('btn1'), 'Btn 1'),
@@ -135,6 +139,7 @@ observeEvent(input$btn_validate_Step2, ignoreInit = T, {
 })
 
 output$select2_1_UI <-renderUI({
+  rv.process$tl.tags.enabled
   if (rv.process$tl.tags.enabled['Step2'])
       selectInput(ns('select2_1'), 'Select 2_1 in renderUI', 
               choices = 1, 
@@ -148,6 +153,7 @@ output$select2_1_UI <-renderUI({
 })
 
 output$Step2 <- renderUI({
+  rv.process$tl.tags.enabled
   name <- 'Step2'
   wellPanel(
     tagList(
@@ -189,6 +195,7 @@ output$Step2 <- renderUI({
 #------------- Code for step 3 ---------------
 
 output$Step3 <- renderUI({
+  rv.process$tl.tags.enabled
   tagList(
     h3('Step 3'),
     if (rv.process$tl.tags.enabled['Step3'])

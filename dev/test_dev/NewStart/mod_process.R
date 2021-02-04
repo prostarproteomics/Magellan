@@ -22,30 +22,34 @@ mod_process_ui <- function(id){
     shinyjs::useShinyjs(),
     fluidRow(
       align= 'center',
-      column(width=2, div(id = ns('TL_LeftSide'),
-                          style = btn_style,
-                          shinyjs::disabled(actionButton(ns("prevBtn"), "<<",
-                                                       class = PrevNextBtnClass,
-                                                       style='padding:4px; font-size:80%')),
-                        shinyjs::disabled(actionButton(ns("rstBtn"), "Reset",
-                                                       class = redBtnClass,
-                                                       style='padding:4px; font-size:80%'))
-    )
-    ),
-    column(width=8, div(id = ns('TL_Center'),
-                        style = btn_style,
-                        mod_timeline_ui(ns('timeline'))
-    )
-    ),
-    column(width=2, div(id = ns('TL_RightSide'),
-                        style = btn_style,
-                        actionButton(ns("nextBtn"),
-                                     ">>",
-                                     class = PrevNextBtnClass,
-                                     style='padding:4px; font-size:80%')
-    )
-    )
-  ),
+      column(width=2, 
+             div(id = ns('TL_LeftSide'),
+                 style = btn_style,
+                 shinyjs::disabled(
+                   actionButton(ns("prevBtn"), "<<",
+                                class = PrevNextBtnClass,
+                                style='padding:4px; font-size:80%')
+                   ),
+                 actionButton(ns("rstBtn"), "Reset",
+                              class = redBtnClass,
+                              style='padding:4px; font-size:80%')
+                 )
+             ),
+      column(width=8, 
+             div(id = ns('TL_Center'),
+                 style = btn_style,
+                 mod_timeline_ui(ns('timeline'))
+                 )
+             ),
+      column(width=2, 
+             div(id = ns('TL_RightSide'),
+                 style = btn_style,
+                 actionButton(ns("nextBtn"),">>",
+                              class = PrevNextBtnClass,
+                              style='padding:4px; font-size:80%')
+                 )
+             )
+      ),
   
    div(id = ns('Screens'),
        uiOutput(ns('SkippedInfoPanel')),
@@ -127,7 +131,7 @@ mod_process_server <- function(id,
       rv.process$config$mandatory <- setNames(rv.process$config$mandatory, rv.process$config$steps)
       rv.process$status = setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
       rv.process$currentStepName <- reactive({rv.process$config$steps[rv.process$current.pos]})
-      rv.process$tl.tags.enabled = setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
+      rv.process$tl.tags.enabled <- setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
       #browser()
     }, priority=1000)  
     
@@ -146,8 +150,11 @@ mod_process_server <- function(id,
     )
     
     
-    observeEvent(position(), {
-      rv.process$current.pos <-position()
+    observeEvent(req(position()), {
+      if (position == 'last')
+        rv.process$current.pos <- length(rv.process$config$steps)
+      else if (is.numeric(position()))
+        rv.process$current.pos <- position()
     })
     
     #' @description
@@ -402,7 +409,7 @@ mod_process_server <- function(id,
   #' 
   ToggleState_Screens = function(cond, range){
     if(verbose) cat(paste0('::ToggleState_Steps() from - ', id, '\n\n'))
-   # browser()
+    #browser()
     if (tag.enabled())
       lapply(range, function(x){
         cond <- cond && !(rv.process$status[x] == global$SKIPPED)
@@ -536,7 +543,7 @@ mod_process_server <- function(id,
      } else { # A new dataset has been loaded
        print('Process : dataIn() not NULL')
        #shinyjs::toggleState('Screens', TRUE)
-       ToggleState_ResetBtn(TRUE) #Enable the reset button
+       #ToggleState_ResetBtn(TRUE) #Enable the reset button
        rv.process$original.length <- length(dataIn())
        
        Update_State_Screens()
@@ -607,7 +614,9 @@ mod_process_server <- function(id,
  })
 
  output$show_Debug_Infos <- renderUI({
-      fluidRow(
+      tagList(
+        uiOutput(ns('show_tag_enabled')),
+        fluidRow(
         column(width=2,
                tags$b(h4(style = 'color: blue;', paste0("Global input of ", rv.process$config$type))),
                uiOutput(ns('show_dataIn'))),
@@ -620,6 +629,7 @@ mod_process_server <- function(id,
         column(width=4,
                tags$b(h4(style = 'color: blue;', "status")),
                uiOutput(ns('show_status')))
+      )
       )
  })
  
@@ -662,6 +672,13 @@ mod_process_server <- function(id,
                       tags$p(style = paste0('color: ', color, ';'),
                              paste0(rv.process$config$steps[x], ' - ', GetStringStatus(rv.process$status[[x]])))
                   }))
+ })
+ 
+ output$show_tag_enabled <- renderUI({
+   tagList(
+     p(paste0('tl.tags.enabled = ', paste0(as.numeric(rv.process$tl.tags.enabled), collapse=' '))),
+     p(paste0('enabled() = ', as.numeric(tag.enabled())))
+   )
  })
  
  reactive({dataOut})

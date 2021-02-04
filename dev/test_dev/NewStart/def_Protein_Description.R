@@ -7,6 +7,7 @@ config <- list(name = 'Protein_Description',
 
 ###### ------------------- Code for Description (step 0) -------------------------    #####
 output$Description <- renderUI({
+  rv.process$tl.tags.enabled
   wellPanel(
     tagList(
       includeMarkdown( system.file("app/md", paste0(config$name, ".md"), package="Magellan")),

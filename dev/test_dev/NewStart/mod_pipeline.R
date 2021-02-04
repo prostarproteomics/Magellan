@@ -5,7 +5,7 @@ optionsBtnClass <- "info"
 
 btn_style <- "display:inline-block; vertical-align: middle; padding: 7px"
 
-verbose <- T
+verbose <- F
 
 
 #' pipeline UI Function
@@ -28,10 +28,9 @@ mod_pipeline_ui <- function(id){
                           shinyjs::disabled(actionButton(ns("prevBtn"), "<<",
                                                          class = PrevNextBtnClass,
                                                          style='padding:4px; font-size:80%')),
-                          shinyjs::disabled(actionButton(ns("rstBtn"), "Reset",
-                                                         class = redBtnClass,
-                                                         style='padding:4px; font-size:80%'))
-      )
+                          actionButton(ns("rstBtn"), "Reset",
+                                       class = redBtnClass,
+                                       style='padding:4px; font-size:80%'))
       ),
       column(width=8, div(id = ns('TL_Center'),
                           style = btn_style,
@@ -154,11 +153,11 @@ mod_pipeline_server <- function(id,
     }, priority=1000)  
     
     
-    observeEvent(tag.enabled(), ignoreNULL = FALSE, ignoreInit = TRUE, {
-      browser()
-      if (!isTRUE(tag.enabled()))
-        rv.child$enabled <- setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
-    })
+    # observeEvent(tag.enabled(), ignoreNULL = FALSE, ignoreInit = TRUE, {
+    #   browser()
+    #   if (!isTRUE(tag.enabled()))
+    #     rv.child$enabled <- setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
+    # })
     
     
     
@@ -169,7 +168,7 @@ mod_pipeline_server <- function(id,
     #'
     Launch_Module_Server <- function(){
       if(verbose) cat(paste0('Launch_Module_Server() from - ', id, '\n\n'))
-      browser()
+      #browser()
       lapply(rv.process$config$steps, function(x){
         tmp.return[[x]] <- do.call(paste0('mod_process_server'),
                                    list(id = paste0(id, '_', x) ,
@@ -237,11 +236,13 @@ mod_pipeline_server <- function(id,
     #' 
     BasicReset = function(){
       if(verbose) cat(paste0('BasicReset() from - ', id, '\n\n'))
+      #browser()
       ResetScreens()
       rv.process$dataIn <- NULL
       rv.process$current.pos <- 1
       Initialize_Status_Process()
       Send_Result_to_Caller()
+      #browser()
     }
     
     
@@ -296,6 +297,7 @@ mod_pipeline_server <- function(id,
     #'
     Send_Result_to_Caller = function(){
       if(verbose) cat(paste0('::Send_Result_to_Caller() from - ', id, '\n\n'))
+      #browser()
       dataOut$trigger <- Timestamp()
       dataOut$value <- rv.process$dataIn
     }
@@ -367,7 +369,7 @@ mod_pipeline_server <- function(id,
       # browser()
       # Returns NULL to all modules except the one pointed by the current position
       # Initialization of the pipeline : one send dataIn() to the
-      # original module
+      # first module
       #browser()
       
       update <- function(name){
@@ -389,7 +391,7 @@ mod_pipeline_server <- function(id,
         return(data)
       }
      
-      browser() 
+      #browser() 
       rv.child$data2send <- setNames(
         lapply(rv.process$config$steps, function(x){NULL}),
         rv.process$config$steps)
@@ -563,8 +565,8 @@ mod_pipeline_server <- function(id,
       BasicReset()
       
       # Say to all child processes to reset themselves
-      rv.child$enabled = setNames(
-        rep(FALSE, length(rv.process$config$steps)), 
+      rv.child$reset = setNames(
+        rep(TRUE, length(rv.process$config$steps)), 
         rv.process$config$steps)
       
     }
@@ -780,14 +782,20 @@ mod_pipeline_server <- function(id,
       if(verbose) cat(paste0('::', 'ActionOn_Data_Trigger from - ', id, '\n\n'))
     #browser()
       processHasChanged <- newValue <- NULL
-      
       return.trigger.values <- setNames(lapply(rv.process$config$steps, function(x){tmp.return[[x]]()$trigger}),
                                         rv.process$config$steps)
-      
+      return.values <- setNames(lapply(rv.process$config$steps, function(x){tmp.return[[x]]()$value}),
+                                rv.process$config$steps)
       triggerValues <- unlist(return.trigger.values)
+      
+      #browser()
       if (sum(triggerValues)==0){ # Init of core engine
         
-      } else {
+      } else if (is.null(unlist(return.values))) { # The entire pipeline has been reseted
+        print('The entire pipeline has been reseted')
+        PrepareData2Send()
+        
+        } else {
         processHasChanged <- rv.process$config$steps[which(max(triggerValues)==triggerValues)]
         ind.processHasChanged <- which(rv.process$config$steps==processHasChanged)
         newValue <- tmp.return[[processHasChanged]]()$value
@@ -850,7 +858,7 @@ mod_pipeline_server <- function(id,
       shinyjs::hide(selector = paste0(".page_", id))
       shinyjs::show(paste0(id, '_', rv.process$config$steps)[rv.process$current.pos])
       
-      #ActionOn_NewPosition()
+      ActionOn_NewPosition()
       
     })
     
@@ -899,7 +907,7 @@ mod_pipeline_server <- function(id,
       #{
         Change_Current_Pos(1)
         rv.process$temp.dataIn <- dataIn()
-        #ActionOn_New_DataIn() # Used by class pipeline
+        ActionOn_New_DataIn() # Used by class pipeline
         # shinyjs::toggleState('Screens', TRUE)
         
         if(is.null(dataIn())){
@@ -910,7 +918,7 @@ mod_pipeline_server <- function(id,
           rv.process$original.length <- 0
         } else { # A new dataset has been loaded
           print('Pipeline : dataIn() not NULL')
-          browser()
+          #browser()
           #shinyjs::toggleState('Screens', TRUE)
           ToggleState_ResetBtn(TRUE) #Enable the reset button
           rv.process$original.length <- length(dataIn())
@@ -984,19 +992,22 @@ mod_pipeline_server <- function(id,
     })
     
     output$show_Debug_Infos <- renderUI({
-      fluidRow(
-        column(width=2,
-               tags$b(h4(style = 'color: blue;', paste0("Global input of ", rv.process$config$type))),
-               uiOutput(ns('show_dataIn'))),
-        column(width=2,
-               tags$b(h4(style = 'color: blue;', paste0("Temp input of ", rv.process$config$type))),
-               uiOutput(ns('show_rv_dataIn'))),
-        column(width=2,
-               tags$b(h4(style = 'color: blue;', paste0("Output of ", rv.process$config$type))),
-               uiOutput(ns('show_rv_dataOut'))),
-        column(width=4,
-               tags$b(h4(style = 'color: blue;', "status")),
-               uiOutput(ns('show_status')))
+      tagList(
+        uiOutput(ns('show_tag_enabled')),
+        fluidRow(
+          column(width=2,
+                 tags$b(h4(style = 'color: blue;', paste0("Initial input of ", rv.process$config$name))),
+                 uiOutput(ns('show_dataIn'))),
+          column(width=2,
+                 tags$b(h4(style = 'color: blue;', paste0("Temp input of ", rv.process$config$name))),
+                 uiOutput(ns('show_rv_dataIn'))),
+          column(width=2,
+                 tags$b(h4(style = 'color: blue;', paste0("Output of ", rv.process$config$name))),
+                 uiOutput(ns('show_rv_dataOut'))),
+          column(width=4,
+                 tags$b(h4(style = 'color: blue;', "status")),
+                 uiOutput(ns('show_status')))
+        )
       )
     })
     
@@ -1012,7 +1023,7 @@ mod_pipeline_server <- function(id,
     
     output$show_rv_dataIn <- renderUI({
       if (verbose) cat(paste0('::output$show_rv_dataIn from - ', id, '\n\n'))
-      req(rv.process$dataIn)
+      rv.process$dataIn
       tagList(
         # h4('show dataIn()'),
         lapply(names(rv.process$dataIn), function(x){tags$p(x)})
@@ -1021,6 +1032,8 @@ mod_pipeline_server <- function(id,
     
     output$show_rv_dataOut <- renderUI({
       if (verbose) cat(paste0('::output$show_rv_dataOut from - ', id, '\n\n'))
+      #browser()
+      dataOut$value
       tagList(
         #h4('show dataOut$value'),
         lapply(names(dataOut$value), function(x){tags$p(x)})
@@ -1039,6 +1052,14 @@ mod_pipeline_server <- function(id,
                          tags$p(style = paste0('color: ', color, ';'),
                                 paste0(rv.process$config$steps[x], ' - ', GetStringStatus(rv.process$status[[x]])))
                      }))
+    })
+    
+    
+    output$show_tag_enabled <- renderUI({
+      tagList(
+        p(paste0('tl.tags.enabled = ', paste0(as.numeric(rv.child$enabled), collapse=' '))),
+        p(paste0('enabled() = ', as.numeric(tag.enabled())))
+      )
     })
     
     reactive({dataOut})
