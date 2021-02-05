@@ -22,41 +22,33 @@ mod_pipeline_ui <- function(id){
   tagList(
     shinyjs::useShinyjs(),
     fluidRow(
-      align= 'center',
-      column(width=2, div(id = ns('TL_LeftSide'),
-                          style = btn_style,
-                          shinyjs::disabled(actionButton(ns("prevBtn"), "<<",
-                                                         class = PrevNextBtnClass,
-                                                         style='padding:4px; font-size:80%')),
-                          actionButton(ns("rstBtn"), "Reset",
-                                       class = redBtnClass,
-                                       style='padding:4px; font-size:80%'))
-      ),
-      column(width=8, div(id = ns('TL_Center'),
-                          style = btn_style,
-                          mod_timeline_ui(ns('timeline'))
-      )
-      ),
-      column(width=2, div(id = ns('TL_RightSide'),
-                          style = btn_style,
-                          actionButton(ns("nextBtn"),
-                                       ">>",
-                                       class = PrevNextBtnClass,
-                                       style='padding:4px; font-size:80%')
-      )
-      )
-    ),
-    
-    div(id = ns('Screens'),
-        uiOutput(ns('SkippedInfoPanel')),
-        uiOutput(ns('EncapsulateScreens'))
-    ),
-    wellPanel(
-      tagList(
-        h3('module pipeline'),
-        uiOutput(ns('show_Debug_Infos'))
+      column(width=2,
+             shinyjs::disabled(actionButton(ns("prevBtn"), "<<",
+                                            class = PrevNextBtnClass,
+                                            style='padding:4px; font-size:80%')),
+             actionButton(ns("rstBtn"), "Reset",
+                          class = redBtnClass,
+                          style='padding:4px; font-size:80%'),
+             actionButton(ns("nextBtn"),
+                          ">>",
+                          class = PrevNextBtnClass,
+                          style='padding:4px; font-size:80%'),
+             mod_timeline_v_ui(ns('TLv'))
+             ),
+      column(width=10, 
+            wellPanel(
+              p('test'),
+             
+             #uiOutput(ns('SkippedInfoPanel')),
+             uiOutput(ns('EncapsulateScreens')),
+             wellPanel(
+               
+               h3('module pipeline'),
+               uiOutput(ns('show_Debug_Infos'))
+             ))
       )
     )
+
   )
 }
 
@@ -66,17 +58,11 @@ mod_pipeline_ui <- function(id){
 mod_pipeline_server <- function(id,
                                 dataIn = reactive({NULL}),
                                 tag.enabled = reactive({TRUE}),
-                                orientation = 'h') {
+                                orientation = 'v') {
   
  
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
-    
-    
-    #' @field orientation orientation of the timeline: horizontal ('h') (default) or vertical ('v)
-    orientation = 'h'
-    
     
     # Specific to pipeline module
     tmp.return <- reactiveValues()
@@ -230,7 +216,7 @@ mod_pipeline_server <- function(id,
     
     
     
-    mod_timeline_server(id = 'timeline',
+    mod_timeline_v_server(id = 'TLv',
                         config =  rv.process$config,
                         status = reactive({rv.process$status}),
                         position = reactive({rv.process$current.pos}),

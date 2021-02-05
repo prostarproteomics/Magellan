@@ -1,11 +1,35 @@
 library(shiny)
 library(shinydashboard)
+library(shinyWidgets)
+library(shinyjs)
+library(QFeatures)
+library(tibble)
+library(MSPipelines)
 
-source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
+options(shiny.fullstacktrace = T)
+
+#------------------------ Class TimelineDraw -----------------------------------
+source(file.path('.', 'mod_timeline_h.R'), local=TRUE)$value
+source(file.path('.', 'mod_timeline_v.R'), local=TRUE)$value
 source(file.path('.', 'mod_process.R'), local=TRUE)$value
-#source(file.path('.', 'mod_TestProcess.R'), local=TRUE)$value
+source(file.path('.', 'mod_pipeline.R'), local=TRUE)$value
 
 
+redBtnClass <- "btn-danger"
+PrevNextBtnClass <- "btn-info"
+btn_success_color <- "btn-success"
+optionsBtnClass <- "info"
+
+btn_style <- "display:inline-block; vertical-align: middle; padding: 7px"
+
+AddItemToDataset <- function(dataset, name){
+  addAssay(dataset, 
+           dataset[[length(dataset)]], 
+           name=name)
+}
+
+
+#--------------------------------------------------------
 ui <- dashboardPage(
   dashboardHeader(),
     dashboardSidebar(
@@ -21,18 +45,13 @@ ui <- dashboardPage(
     tabItems(
       # First tab content
       tabItem(tabName = "screen1",
-              fluidRow(
-                actionButton('send', 'Send'),
-                mod_process_ui('process')
-              )
+             p('Test')
       ),
       
       # Second tab content
       tabItem(tabName = "screen2",
               tagList(
-                shinyjs::disabled(
-                selectInput('select1', 'Select 1', choices = 1:3)),
-                uiOutput('magellan')
+                mod_pipeline_ui('Protein')
               )
       )
     )
@@ -42,22 +61,20 @@ ui <- dashboardPage(
 server <- function(input, output) {
   
   
-  observeEvent(input$send, {
-    shinyjs::toggleState('select1', condition = T )
-    shinyjs::toggleState('tutu', condition = T )
-    
-  })
+  obj <- NULL
+  obj <- Exp1_R25_prot
   
   
-  config <- list(name = 'Normalization',
-                 steps = c('Description', 'Step1', 'Step2', 'Step3'),
-                 mandatory = c(T, T, T, T)
+  rv <- reactiveValues(
+    res = NULL
   )
   
-  mod_process_server('process', 
-                     name = 'Normalization',
-                     dataIn = reactive({NULL}),
-                     .config = config)
+  observe({
+    rv$res <- mod_pipeline_server(id = 'Protein', 
+                                  dataIn = reactive({obj}),
+                                  tag.enabled = reactive({TRUE})
+    )
+  })
 }
 
 shinyApp(ui, server)

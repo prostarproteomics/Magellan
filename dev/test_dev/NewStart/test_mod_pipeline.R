@@ -8,7 +8,8 @@ library(MSPipelines)
 options(shiny.fullstacktrace = T)
 
 #------------------------ Class TimelineDraw -----------------------------------
-source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
+source(file.path('.', 'mod_timeline_h.R'), local=TRUE)$value
+source(file.path('.', 'mod_timeline_v.R'), local=TRUE)$value
 source(file.path('.', 'mod_process.R'), local=TRUE)$value
 source(file.path('.', 'mod_pipeline.R'), local=TRUE)$value
 

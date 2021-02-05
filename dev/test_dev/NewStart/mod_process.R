@@ -20,10 +20,7 @@ mod_process_ui <- function(id){
   ns <- NS(id)
   tagList(
     shinyjs::useShinyjs(),
-    fluidRow(
-      align= 'center',
-      column(width=2, 
-             div(id = ns('TL_LeftSide'),
+     div(id = ns('TL_LeftSide'),
                  style = btn_style,
                  shinyjs::disabled(
                    actionButton(ns("prevBtn"), "<<",
@@ -33,29 +30,23 @@ mod_process_ui <- function(id){
                  actionButton(ns("rstBtn"), "Reset",
                               class = redBtnClass,
                               style='padding:4px; font-size:80%')
-                 )
              ),
-      column(width=8, 
-             div(id = ns('TL_Center'),
+      div(id = ns('TL_Center'),
                  style = btn_style,
-                 mod_timeline_ui(ns('timeline'))
-                 )
+                 mod_timeline_h_ui(ns('timeline'))
              ),
-      column(width=2, 
-             div(id = ns('TL_RightSide'),
+      div(id = ns('TL_RightSide'),
                  style = btn_style,
                  actionButton(ns("nextBtn"),">>",
                               class = PrevNextBtnClass,
                               style='padding:4px; font-size:80%')
-                 )
-             )
       ),
   
    div(id = ns('Screens'),
        uiOutput(ns('SkippedInfoPanel')),
        uiOutput(ns('EncapsulateScreens'))
    ),
-  wellPanel(
+  box(title = 'foo',
     tagList(
       h3('module process'),
       uiOutput(ns('show_Debug_Infos'))
@@ -72,8 +63,8 @@ mod_process_server <- function(id,
                                tag.enabled = reactive({TRUE}),
                                reset = reactive({FALSE}),
                                position = reactive({NULL}),
-                               skipped = reactive({NULL}),
-                               orientation = 'h'){
+                               skipped = reactive({NULL})
+                               ){
   
   
   ###-------------------------------------------------------------###
@@ -87,9 +78,7 @@ mod_process_server <- function(id,
     #' @field modal_txt xxx
     modal_txt <- "This action will reset this process. The input dataset will be the output of the last previous
                       validated process and all further datasets will be removed"
-    #' @field orientation orientation of the timeline: horizontal ('h') (default) or vertical ('v)
-    orientation = 'h'
-    
+     
     #' @field global xxxx
     global <- list(
       VALIDATED = 1,
@@ -129,7 +118,7 @@ mod_process_server <- function(id,
         stop(paste0("Errors in 'rv.process$config'", paste0(check$msg, collapse=' ')))
       #else
       # rv.process$config <- rv.process$config
-     # browser()
+      #browser()
       rv.process$config$mandatory <- setNames(rv.process$config$mandatory, rv.process$config$steps)
       rv.process$status = setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
       rv.process$currentStepName <- reactive({rv.process$config$steps[rv.process$current.pos]})
@@ -144,17 +133,15 @@ mod_process_server <- function(id,
         rv.process$tl.tags.enabled <- setNames(rep(FALSE, length(rv.process$config$steps)), rv.process$config$steps)
     })
     
-    mod_timeline_server(id = 'timeline',
+    mod_timeline_h_server(id = 'timeline',
                         config =  rv.process$config,
                         status = reactive({rv.process$status}),
                         position = reactive({rv.process$current.pos}),
                         enabled = reactive({rv.process$tl.tags.enabled})
-    )
+                        )
     
     
     observeEvent(req(!is.null(position())), ignoreInit = T, {
-      print('toto2')
-      #browser()
       pos <- strsplit(position(), '_')[[1]][1]
       if (pos == 'last')
         rv.process$current.pos <- length(rv.process$config$steps)

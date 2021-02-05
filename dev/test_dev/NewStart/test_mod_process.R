@@ -1,4 +1,5 @@
 library(shiny)
+library(shinydashboard)
 library(shinyWidgets)
 library(shinyjs)
 library(QFeatures)
@@ -7,7 +8,8 @@ library(tibble)
 options(shiny.fullstacktrace = T)
 
 #------------------------ Class TimelineDraw -----------------------------------
-source(file.path('.', 'mod_timeline.R'), local=TRUE)$value
+source(file.path('.', 'mod_timeline_v.R'), local=TRUE)$value
+source(file.path('.', 'mod_timeline_h.R'), local=TRUE)$value
 source(file.path('.', 'mod_process.R'), local=TRUE)$value
 
 
@@ -43,8 +45,7 @@ server <- function(input, output){
   observe({
   rv$res <- mod_process_server('Protein_Normalization', 
                                dataIn = reactive({obj}),
-                               tag.enabled = reactive({TRUE})
-                               )
+                               tag.enabled = reactive({TRUE}) )
   })
   
 }
