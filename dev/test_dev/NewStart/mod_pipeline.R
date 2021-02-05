@@ -106,6 +106,7 @@ mod_pipeline_server <- function(id,
       position = NULL
     )
     
+    rv.widgets <- reactiveValues()
     rv.process <- reactiveValues(
       status = NULL,
       dataIn = NULL,
@@ -125,6 +126,7 @@ mod_pipeline_server <- function(id,
     
     observeEvent(id, {
       
+      # get code for pipeline UI
       source(file.path('.', paste0('def_', id, '.R')), local=TRUE)$value
       
       rv.process$config <- config
@@ -134,7 +136,14 @@ mod_pipeline_server <- function(id,
       #else
       # rv.process$config <- rv.process$config
       
+      rv.child$position <- setNames(rep('first', length(rv.process$config$steps)), rv.process$config$steps)
+      rv.process$config$mandatory <- setNames(rv.process$config$mandatory, rv.process$config$steps)
+      rv.process$status <- setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
+      rv.process$currentStepName <- reactive({rv.process$config$steps[rv.process$current.pos]})
+      rv.child$enabled <- setNames(rep(TRUE, length(rv.process$config$steps)), rv.process$config$steps)
       
+      
+      # Get code for processes UI
       lapply(rv.process$config$steps,
              function(x){
                if (paste0(id, '_', x) != paste0(id, '_','Description'))
@@ -142,12 +151,9 @@ mod_pipeline_server <- function(id,
              }
       )
       
+      #browser()
       
       
-      rv.process$config$mandatory <- setNames(rv.process$config$mandatory, rv.process$config$steps)
-      rv.process$status <- setNames(rep(global$UNDONE, length(rv.process$config$steps)), rv.process$config$steps)
-      rv.process$currentStepName <- reactive({rv.process$config$steps[rv.process$current.pos]})
-      rv.child$enabled <- setNames(rep(TRUE, length(rv.process$config$steps)), rv.process$config$steps)
       #browser()
       Launch_Module_Server()
     }, priority=1000)  
@@ -175,7 +181,7 @@ mod_pipeline_server <- function(id,
                                         dataIn = reactive({ rv.child$data2send[[x]] }),
                                         tag.enabled = reactive({isTRUE(rv.child$enabled[x])}),
                                         reset = reactive({isTRUE(rv.child$reset[x])}),
-                                        position = reactive({isTRUE(rv.child$position[x])}),
+                                        position = reactive({rv.child$position[x]}),
                                         skipped = reactive({rv.process$status[x] == global$SKIPPED})
                                         )
         )
@@ -469,6 +475,7 @@ mod_pipeline_server <- function(id,
     #' 
     GetFirstMandatoryNotValidated = function(range){
       if(verbose) cat(paste0('::', 'GetFirstMandatoryNotValidated() from - ', id, '\n\n'))
+      #browser()
       first <- NULL
       first <- unlist((lapply(range, 
                               function(x){rv.process$config$mandatory[x] && !rv.process$status[x]})))
@@ -830,7 +837,7 @@ mod_pipeline_server <- function(id,
          # browser()
           # process has been validated
           rv.process$status[processHasChanged] <- global$VALIDATED
-          if (ind.processHasChanged < length(rv.process$config$steps))
+           if (ind.processHasChanged < length(rv.process$config$steps))
             rv.process$status[(ind.processHasChanged+1):length(rv.process$config$steps)] <- global$UNDONE
           
           Discover_Skipped_Steps()
@@ -891,9 +898,10 @@ mod_pipeline_server <- function(id,
       # Send dataset to child process only if the current position is enabled
       if(rv.child$enabled[rv.process$current.pos])
         PrepareData2Send()
+      browser()
       # If the current step is validated, set the child current position to the last step
       if (rv.process$status[rv.process$current.pos] == global$VALIDATED)
-        rv.child$position[rv.process$current.pos] <- 'last'
+        rv.child$position[rv.process$current.pos]<- 'last'
     }
     
     #

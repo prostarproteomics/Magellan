@@ -151,8 +151,10 @@ mod_process_server <- function(id,
     )
     
     
-    observeEvent(req(position()), {
-      if (position == 'last')
+    observeEvent(req(!is.null(position())), {
+      print('toto2')
+      browser()
+      if (position() == 'last')
         rv.process$current.pos <- length(rv.process$config$steps)
       else if (is.numeric(position()))
         rv.process$current.pos <- position()

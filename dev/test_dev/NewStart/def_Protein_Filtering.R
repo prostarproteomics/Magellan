@@ -5,6 +5,24 @@ config <- list(name = 'Protein_Filtering',
 
 
 
+# Define default selected values for widgets
+widgets.default.values <- list(
+  select1 =1,
+  select2 = NULL,
+  select3 = 1,
+  select2_1 = 1,
+  select2_2 = 1
+)
+
+# Set widgets selected values to their default
+rv.widgets$select1 <- widgets.default.values$select1
+rv.widgets$select2 <- widgets.default.values$select2
+rv.widgets$select3 <- widgets.default.values$select3
+rv.widgets$select2_1 <- widgets.default.values$select2_1
+rv.widgets$select2_2 <- widgets.default.values$select2_2
+
+
+
 ###### ------------------- Code for Description (step 0) -------------------------    #####
 output$Description <- renderUI({
   rv.process$tl.tags.enabled
@@ -18,14 +36,14 @@ output$Description <- renderUI({
                      paste0('Start ', config$name),
                      class = btn_success_color)
       else
-      shinyjs::disabled(
-        actionButton(ns('btn_validate_Description'), 
-                   paste0('Start ', config$name),
-                   class = btn_success_color)
-    )
+        shinyjs::disabled(
+          actionButton(ns('btn_validate_Description'), 
+                       paste0('Start ', config$name),
+                       class = btn_success_color)
+        )
     )
   )
- # browser()
+  # browser()
 })
 
 observeEvent(input$btn_validate_Description, ignoreInit = T, ignoreNULL=T, {
@@ -42,43 +60,47 @@ observeEvent(input$btn_validate_Step1, ignoreInit = T, {
 })
 
 
-#observeEvent(input$select1, {process.var$select1 <- input$select1})
+observeEvent(input$select1,{rv.widgets$select1 <- input$select1})
+observeEvent(input$select2,{rv.widgets$select2 <- input$select2})
+observeEvent(input$select3,{rv.widgets$select3 <- input$select3})
+observeEvent(input$select2,{rv.widgets$select2_1 <- input$select2_1})
+observeEvent(input$select3,{rv.widgets$select2_2 <- input$select2_2})
 
 
-observe({
-  req(input$btn1)
-  updateSelectInput(session, 'select1', choices = 1:input$btn1)
-  updateSelectInput(session, 'select2', choices = 1:input$btn1)
-  updateSelectInput(session, 'select3', choices = 1:input$btn1)
-})
 
 
 output$test1 <-renderUI({
-  rv.process$tl.tags.enabled
+  #rv.process$tl.tags.enabled
+  rv.widgets$select1
   if (rv.process$tl.tags.enabled['Step1'])
-    selectInput(ns('select1'), 'Select 1 in renderUI', 
-                                choices = 1:3, 
-                                width = '150px')
+    selectInput(ns('select1'), 'Select 1 in renderUI',
+                choices = 1:4,
+                selected = rv.widgets$select1,
+                width = '150px')
   else
     shinyjs::disabled(
-      selectInput(ns('select1'), 'Select 1 in renderUI', 
-                                  choices = 1:3, 
-                                  width = '150px')
-      )
+      selectInput(ns('select1'), 'Select 1 in renderUI',
+                  choices = 1:4,
+                  selected = rv.widgets$select1,
+                  width = '150px')
+    )
 })
 
 
 
 output$test2 <-renderUI({
+  
   rv.process$tl.tags.enabled
   if (rv.process$tl.tags.enabled['Step1'])
     selectInput(ns('select2'), 'Select 2 in renderUI', 
                 choices = 1:3,
+                selected = rv.widgets$select2,
                 width = '150px')
   else
     shinyjs::disabled(
       selectInput(ns('select2'), 'Select 2 in renderUI', 
-                  choices = 1:3, 
+                  choices = 1:4,
+                  selected = rv.widgets$select2,
                   width = '150px')
     )
 })
@@ -88,46 +110,46 @@ output$test2 <-renderUI({
 
 # ------------------------ STEP 1 : UI ------------------------------------
 output$Step1 <- renderUI({
-  rv.process$tl.tags.enabled
+  #rv.process$tl.tags.enabled
   name <- 'Step1'
-  wellPanel(
-    actionButton(ns('btn1'), 'Btn 1'),
-    tagList(
-      div(id=ns(name),
-          div(style="display:inline-block; vertical-align: middle;padding-right: 20px;",
-              uiOutput(ns('test1'))
-          ),
-          div(style="display:inline-block; vertical-align: middle;padding-right: 20px;",
-              uiOutput(ns('test2'))
-          ),
-          div(style="display:inline-block; vertical-align: middle; padding-right: 40px;",
-              if (rv.process$tl.tags.enabled['Step1'])
-                selectInput(ns('select3'), 'Select step 3', 
-                          choices = 1, 
-                          selected = 1,
-                          width = '150px')
-              else
-                shinyjs::disabled(
-                  selectInput(ns('select3'), 'Select step 3', 
-                              choices = 1, 
-                              selected = 1,
-                              width = '150px')
-                )
-          ),
-          div(style="display:inline-block; vertical-align: middle;padding-right: 20px;",
-              if (rv.process$tl.tags.enabled['Step1'])
-                actionButton(ns(paste0('btn_validate_', name)), 
-                             'Perform',
-                             class = btn_success_color)
-              else
-                shinyjs::disabled(
-                  actionButton(ns(paste0('btn_validate_', name)),
-                               'Perform',
-                               class = btn_success_color)
+  wellPanel(id = ns('toto'),
+            actionButton(ns('btn1'), 'Btn 1'),
+            tagList(
+              div(id=ns('Step1a'),
+                  div(style="display:inline-block; vertical-align: middle;padding-right: 20px;",
+                      uiOutput(ns('test1'))
+                  ),
+                  div(style="display:inline-block; vertical-align: middle;padding-right: 20px;",
+                      uiOutput(ns('test2'))
+                  ),
+                  div(style="display:inline-block; vertical-align: middle; padding-right: 40px;",
+                      if (rv.process$tl.tags.enabled['Step1'])
+                        selectInput(ns('select3'), 'Select step 3', 
+                                    choices = 1:3, 
+                                    selected = rv.widgets$select3,
+                                    width = '150px')
+                      else
+                        shinyjs::disabled(
+                          selectInput(ns('select3'), 'Select step 3', 
+                                      choices = 1:5, 
+                                      selected = rv.widgets$select3,
+                                      width = '150px')
+                        )
+                  ),
+                  div(style="display:inline-block; vertical-align: middle;padding-right: 20px;",
+                      if (rv.process$tl.tags.enabled['Step1'])
+                        actionButton(ns(paste0('btn_validate_', name)), 
+                                     'Perform',
+                                     class = btn_success_color)
+                      else
+                        shinyjs::disabled(
+                          actionButton(ns(paste0('btn_validate_', name)),
+                                       'Perform',
+                                       class = btn_success_color)
+                        )
                   )
-           )
-      )
-    )
+              )
+            )
   )
 })
 
@@ -141,13 +163,13 @@ observeEvent(input$btn_validate_Step2, ignoreInit = T, {
 output$select2_1_UI <-renderUI({
   rv.process$tl.tags.enabled
   if (rv.process$tl.tags.enabled['Step2'])
-      selectInput(ns('select2_1'), 'Select 2_1 in renderUI', 
-              choices = 1, 
-              width = '150px')
+    selectInput(ns('select2_1'), 'Select 2_1 in renderUI', 
+                choices = 1:3, 
+                width = '150px')
   else
     shinyjs::disabled(
       selectInput(ns('select2_1'), 'Select 2_1 in renderUI', 
-                  choices = 1, 
+                  choices = 1:3, 
                   width = '150px')
     )
 })
@@ -164,15 +186,15 @@ output$Step2 <- renderUI({
           div(style="display:inline-block; vertical-align: middle; padding-right: 40px;",
               if (rv.process$tl.tags.enabled['Step2'])
                 selectInput(ns('select2_2'), 'Select 2_2', 
-                          choices = 1, 
-                          width = '150px')
+                            choices = 1, 
+                            width = '150px')
               else
                 shinyjs::disabled(
                   selectInput(ns('select2_2'),
                               'Select 2_2', 
                               choices = 1, 
                               width = '150px')
-                  )
+                )
           ),
           div(style="display:inline-block; vertical-align: middle;padding-right: 20px;",
               if (rv.process$tl.tags.enabled['Step2'])
@@ -181,9 +203,9 @@ output$Step2 <- renderUI({
                              class = btn_success_color)
               else
                 shinyjs::disabled(
-                actionButton(ns(paste0('btn_validate_', name)), 
-                             'Perform',
-                             class = btn_success_color)
+                  actionButton(ns(paste0('btn_validate_', name)), 
+                               'Perform',
+                               class = btn_success_color)
                 )
           )
       )
@@ -207,7 +229,7 @@ output$Step3 <- renderUI({
         actionButton(ns('btn_validate_Step3'), 
                      'Perform',
                      class = btn_success_color)
-        )
+      )
   )
 })
 
