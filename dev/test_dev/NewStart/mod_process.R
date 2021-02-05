@@ -97,6 +97,7 @@ mod_process_server <- function(id,
       SKIPPED = -1
     )
     
+    rv.widgets <- reactiveValues()
     
     rv.process <- reactiveValues(
       parent = NULL,
@@ -171,17 +172,7 @@ mod_process_server <- function(id,
     
     
     
-    
-    #' @description
-    #' Set widgets of all screens to their default values.
-    #' 
-    ResetScreens = function(){
-      if(verbose) cat(paste0('::ResetScreens() from - ', id, '\n\n'))
-      
-      lapply(1:length(rv.process$config$steps), function(x){
-        shinyjs::reset(rv.process$config$steps[x])
-      })
-    }
+   
     
     # Check if the rv.process$config is correct
     #'
@@ -240,6 +231,7 @@ mod_process_server <- function(id,
     #' @return Nothing.
     #' 
     ValidateCurrentPos <- function(){
+      #browser()
       rv.process$status[rv.process$current.pos] <- global$VALIDATED
       # Either the process has been validated, one can prepare data to be sent to caller
       # Or the module has been reseted
@@ -377,10 +369,10 @@ mod_process_server <- function(id,
   #' 
   Update_State_Screens = function(){
     if(verbose) cat(paste0('::', 'Update_State_Screens() from - ', id, '\n\n'))
-    #browser()
+ 
     ind.max <- GetMaxValidated_AllSteps()
     #browser()
-    if (ind.max > 0) # No step validated: init or reset of timeline 
+    if (ind.max > 0) 
       ToggleState_Screens(cond = FALSE, range = 1:ind.max)
     
     
@@ -396,6 +388,7 @@ mod_process_server <- function(id,
           ToggleState_Screens(cond = FALSE, range = (ind.max + firstM + 1):length(rv.process$config$steps))
       }
     }
+   # browser()
   }
   
   
@@ -457,9 +450,25 @@ mod_process_server <- function(id,
   })
   
   
+  
+  
+  
+  #' @description
+  #' Set widgets of all screens to their default values.
+  #' 
+  ResetScreens = function(){
+    if(verbose) cat(paste0('::ResetScreens() from - ', id, '\n\n'))
+    lapply(names(rv.widgets), function(x){
+      rv.widgets[[x]] <- widgets.default.values[[x]]
+    })
+  }
+  
+  
+  
  output$EncapsulateScreens <- renderUI({
    #browser()
-     lapply(1:length(rv.process$config$steps), function(i) {
+     
+         lapply(1:length(rv.process$config$steps), function(i) {
        if (i==1)
          div(id = ns(rv.process$config$steps[i]),
              class = paste0("page_", id),
@@ -467,18 +476,15 @@ mod_process_server <- function(id,
          )
        else
          shinyjs::hidden(
-           div(id = ns(rv.process$config$steps[i]),
+           div(id =  ns(rv.process$config$steps[i]),
                class = paste0("page_", id),
                do.call(uiOutput, list(ns(rv.process$config$steps[i])))
            )
          )
+         }
+         )
    })
-   
-   
-   
-   
- })
- 
+
  
  #' @description 
  #' xxx
@@ -559,7 +565,7 @@ mod_process_server <- function(id,
  
  observeEvent(rv.process$status, ignoreInit = T, {
    if (verbose) cat(paste0('::observe((rv$status) from - ', id, '\n\n'))
-   #browser()
+   
    Discover_Skipped_Steps()
    # https://github.com/daattali/shinyjs/issues/166
    # https://github.com/daattali/shinyjs/issues/25
