@@ -1,7 +1,7 @@
 library(shiny)
 library(shinyWidgets)
 library(shinyjs)
-library(R6)
+library(QFeatures)
 library(tibble)
 
 options(shiny.fullstacktrace = T)
@@ -18,6 +18,11 @@ optionsBtnClass <- "info"
 
 btn_style <- "display:inline-block; vertical-align: middle; padding: 7px"
 
+AddItemToDataset <- function(dataset, name){
+  addAssay(dataset, 
+           dataset[[length(dataset)]], 
+           name=name)
+}
 
 
 ui <- fluidPage(

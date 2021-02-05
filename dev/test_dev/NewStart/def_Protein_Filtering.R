@@ -236,5 +236,6 @@ output$Step3 <- renderUI({
 
 observeEvent(input$btn_validate_Step3, ignoreInit = T, {
   # Add your stuff code here
+  rv.process$dataIn <- AddItemToDataset(rv.process$dataIn, rv.process$config$name)
   ValidateCurrentPos()
 })

@@ -98,6 +98,7 @@ mod_process_server <- function(id,
     )
     
     rv.widgets <- reactiveValues()
+    widgets.default.values <- list()
     
     rv.process <- reactiveValues(
       parent = NULL,
@@ -151,12 +152,13 @@ mod_process_server <- function(id,
     )
     
     
-    observeEvent(req(!is.null(position())), {
+    observeEvent(req(!is.null(position())), ignoreInit = T, {
       print('toto2')
-      browser()
-      if (position() == 'last')
+      #browser()
+      pos <- strsplit(position(), '_')[[1]][1]
+      if (pos == 'last')
         rv.process$current.pos <- length(rv.process$config$steps)
-      else if (is.numeric(position()))
+      else if (is.numeric(pos))
         rv.process$current.pos <- position()
     })
     

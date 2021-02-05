@@ -107,6 +107,7 @@ mod_pipeline_server <- function(id,
     )
     
     rv.widgets <- reactiveValues()
+    
     rv.process <- reactiveValues(
       status = NULL,
       dataIn = NULL,
@@ -811,9 +812,16 @@ mod_pipeline_server <- function(id,
         # process has been reseted
         if (is.null(newValue)){
           rv.process$status[ind.processHasChanged:length(rv.process$config$steps)] <- global$UNDONE
+          
+          # Reset all further steps also
+          rv.child$reset[ind.processHasChanged:length(rv.process$config$steps)] <- TRUE
+          rv.child$reset[1:(ind.processHasChanged-1)] <- FALSE
+          
+          
+          
           # browser()
           # One take the last validated step (before the one corresponding to processHasChanges
-          # but it is straightforward because we juste updates self$rv$status
+          # but it is straightforward because we just updates self$rv$status
           ind.last.validated <- NULL
           validated.steps <- which(rv.process$status == global$VALIDATED)
           if (length(validated.steps) !=0)
@@ -895,13 +903,14 @@ mod_pipeline_server <- function(id,
     ActionOn_NewPosition = function(){
       if(verbose) cat(paste0('::ActionOn_NewPosition() from - ', id, '\n\n'))
       
+      print("--- action on New position ---")
       # Send dataset to child process only if the current position is enabled
       if(rv.child$enabled[rv.process$current.pos])
         PrepareData2Send()
-      browser()
+      #browser()
       # If the current step is validated, set the child current position to the last step
       if (rv.process$status[rv.process$current.pos] == global$VALIDATED)
-        rv.child$position[rv.process$current.pos]<- 'last'
+        rv.child$position[rv.process$current.pos] <- paste0('last_', Timestamp())
     }
     
     #
