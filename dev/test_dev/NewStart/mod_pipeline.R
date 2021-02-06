@@ -36,16 +36,13 @@ mod_pipeline_ui <- function(id){
              mod_timeline_v_ui(ns('TLv'))
              ),
       column(width=10, 
-            wellPanel(
-              p('test'),
-             
-             #uiOutput(ns('SkippedInfoPanel')),
+             uiOutput(ns('SkippedInfoPanel')),
              uiOutput(ns('EncapsulateScreens')),
              wellPanel(
                
                h3('module pipeline'),
                uiOutput(ns('show_Debug_Infos'))
-             ))
+             )
       )
     )
 

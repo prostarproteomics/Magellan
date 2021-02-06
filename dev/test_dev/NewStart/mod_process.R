@@ -20,8 +20,8 @@ mod_process_ui <- function(id){
   ns <- NS(id)
   tagList(
     shinyjs::useShinyjs(),
-     div(id = ns('TL_LeftSide'),
-                 style = btn_style,
+    div(style = "padding: 0px",
+      div(style = btn_style,
                  shinyjs::disabled(
                    actionButton(ns("prevBtn"), "<<",
                                 class = PrevNextBtnClass,
@@ -31,22 +31,34 @@ mod_process_ui <- function(id){
                               class = redBtnClass,
                               style='padding:4px; font-size:80%')
              ),
-      div(id = ns('TL_Center'),
-                 style = btn_style,
+      div(style = btn_style,
                  mod_timeline_h_ui(ns('timeline'))
              ),
-      div(id = ns('TL_RightSide'),
-                 style = btn_style,
+      div(style = btn_style,
                  actionButton(ns("nextBtn"),">>",
                               class = PrevNextBtnClass,
                               style='padding:4px; font-size:80%')
-      ),
-  
+      )
+    ),
+  # fluidRow(
+  #   column(width=1, shinyjs::disabled(
+  #     actionButton(ns("prevBtn"), "<<",
+  #                  class = PrevNextBtnClass,
+  #                  style='padding:4px; font-size:80%')
+  #   )),
+  #   column(width=1, actionButton(ns("rstBtn"), "Reset",
+  #                                class = redBtnClass,
+  #                                style='padding:4px; font-size:80%')),
+  #   column(width=9, mod_timeline_h_ui(ns('timeline'))),
+  #   column(width=1, actionButton(ns("nextBtn"),">>",
+  #                                class = PrevNextBtnClass,
+  #                                style='padding:4px; font-size:80%'))
+  # ),
    div(id = ns('Screens'),
        uiOutput(ns('SkippedInfoPanel')),
        uiOutput(ns('EncapsulateScreens'))
    ),
-  box(title = 'foo',
+  wellPanel(title = 'foo',
     tagList(
       h3('module process'),
       uiOutput(ns('show_Debug_Infos'))
